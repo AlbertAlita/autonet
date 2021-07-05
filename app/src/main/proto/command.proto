@@ -1,0 +1,62 @@
+syntax = "proto2";
+package com.video.netty.protobuf;
+option optimize_for = SPEED;
+option java_package = "com.video.netty.protobuf";
+option java_outer_classname = "CommandDataInfo";
+message CommandDataInfoMessage{
+    enum CommandType{
+        VoiceType = 1;
+        BrakeType = 2;
+        BrakeTimingType = 3;
+        ApkVersionType = 4;
+        ProgramType = 5;
+        TokenType = 6;
+        HeartbeatType = 7;
+        ResponseType = 8;
+    }
+    required CommandType data_type = 1;
+    oneof dataBody{
+        VoiceCommand voiceCommand = 2;
+        BrakeCommand brakeCommand = 3;
+        BrakeTimingCommand brakeTimingCommand = 4;
+        ApkVersionCommand apkVersionCommand = 5;
+        ProgramCommand programCommand = 6;
+        TokenCommand tokenCommand = 7;
+        HeartbeatCommand heartbeatCommand = 8;
+        ResponseCommand responseCommand = 9;
+    }
+}
+message VoiceCommand {
+    required int32 voiceValue = 1;
+}
+message BrakeCommand{
+    required int32 brakeValue = 1;
+}
+message BrakeTimingCommand{
+    required string openBrake = 1;
+    required string closeBrake = 2;
+}
+message ApkVersionCommand{
+    required int32 version = 1;
+    required string filePath = 2;
+ }
+message VideoInfo{
+    required int64 id = 1;
+    required string videoName = 2;
+    required string videoPath = 3;
+    required int32 videoNumber = 4;
+}
+message ProgramCommand{
+    required int64 id = 1;
+    required string programName = 2;
+    repeated VideoInfo videoInfo = 3;
+}
+message TokenCommand{
+    required string token = 1;
+}
+message HeartbeatCommand{
+    required string token = 1;
+}
+message ResponseCommand{
+    required int32 responseCode = 1;
+}
