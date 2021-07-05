@@ -16,7 +16,7 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 
 
-public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
+public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataInfo.CommandDataInfoMessage> {
 
     private static final String TAG = "NettyClientHandler";
     private final boolean isSendheartBeat;
@@ -112,8 +112,8 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
      * @param msg                   消息
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, String msg) {
-        Log.e(TAG, "channelRead0:"+msg);
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, CommandDataInfo.CommandDataInfoMessage msg) {
+        Log.e(TAG, "channelRead0:"+msg.toString());
         listener.onMessageResponseClient(msg, index);
     }
 

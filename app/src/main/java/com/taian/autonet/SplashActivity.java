@@ -7,6 +7,7 @@ import android.util.Log;
 
 import com.taian.autonet.client.NettyTcpClient;
 import com.taian.autonet.client.listener.NettyClientListener;
+import com.taian.autonet.client.status.ConnectState;
 import com.video.netty.protobuf.CommandDataInfo;
 
 import java.io.IOException;
@@ -43,22 +44,23 @@ public class SplashActivity extends AppCompatActivity {
 
         mNettyTcpClient.connect();//连接服务器
 
-        CommandDataInfo.TokenCommand tokenCommand = CommandDataInfo.TokenCommand.newBuilder().setToken("abcd").build();
-        CommandDataInfo.CommandDataInfoMessage command = CommandDataInfo.CommandDataInfoMessage.newBuilder().
-                setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.TokenType)
-                .setTokenCommand(tokenCommand).build();
-        boolean b = mNettyTcpClient.sendMsgToServer(command);
-        Log.e("TAG",b +"");
 
         mNettyTcpClient.setListener(new NettyClientListener() {
             @Override
             public void onMessageResponseClient(Object msg, int index) {
-                Log.e("TAG",msg.toString());
+                Log.e("TAG", msg.toString());
             }
 
             @Override
             public void onClientStatusConnectChanged(int statusCode, int index) {
+                if (statusCode == ConnectState.STATUS_CONNECT_SUCCESS) {
 
+                    CommandDataInfo.TokenCommand tokenCommand = CommandDataInfo.TokenCommand.newBuilder().setToken("abcd").build();
+                    CommandDataInfo.CommandDataInfoMessage command = CommandDataInfo.CommandDataInfoMessage.newBuilder().
+                            setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.TokenType)
+                            .setTokenCommand(tokenCommand).build();
+                    mNettyTcpClient.sendMsgToServer(command);
+                }
             }
         }); //设置TCP监听
     }

@@ -273,6 +273,7 @@ public class NettyTcpClient {
      */
     public boolean sendMsgToServer(GeneratedMessageV3 data) {
         boolean flag = channel != null && isConnect;
+        Log.e(getClass().getSimpleName(),flag+"");
         if (flag) {
 //            String separator = TextUtils.isEmpty(packetSeparator) ? System.getProperty("line.separator") : packetSeparator;
             ChannelFuture channelFuture = channel.writeAndFlush(data).awaitUninterruptibly();
