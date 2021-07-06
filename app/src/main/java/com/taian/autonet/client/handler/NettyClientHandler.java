@@ -54,22 +54,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent event = (IdleStateEvent) evt;
             if (event.state() == IdleState.WRITER_IDLE) {   //发送心跳
-//                ctx.channel().writeAndFlush("Heartbeat" + System.getProperty("line.separator"));
                 if (isSendheartBeat) {
-//                    if (heartBeatData == null) {
-//                        ctx.channel().writeAndFlush("Heartbeat" + packetSeparator);
-//                    } else {
-//                        if (heartBeatData instanceof String) {
-////                            Log.d(TAG, "userEventTriggered: String");
-//                            ctx.channel().writeAndFlush(heartBeatData + packetSeparator);
-//                        } else if (heartBeatData instanceof byte[]) {
-////                            Log.d(TAG, "userEventTriggered: byte");
-//                            ByteBuf buf = Unpooled.copiedBuffer((byte[]) heartBeatData);
-//                            ctx.channel().writeAndFlush(buf);
-//                        } else {
-//                            Log.e(TAG, "userEventTriggered: heartBeatData type error");
-//                        }
-//                    }
                     ctx.channel().writeAndFlush(CommandDataInfo.CommandDataInfoMessage.newBuilder().
                             setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.HeartbeatType).
                             setHeartbeatCommand(CommandDataInfo.HeartbeatCommand.newBuilder().setToken("abcd")));
@@ -113,7 +98,6 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
      */
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, CommandDataInfo.CommandDataInfoMessage msg) {
-        Log.e(TAG, "channelRead0:"+msg.toString());
         listener.onMessageResponseClient(msg, index);
     }
 

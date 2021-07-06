@@ -9,6 +9,7 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.taian.autonet.client.handler.NettyClientHandler;
 import com.taian.autonet.client.listener.MessageStateListener;
 import com.taian.autonet.client.listener.NettyClientListener;
+import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
 import com.video.netty.protobuf.CommandDataInfo;
 
@@ -56,7 +57,7 @@ public class NettyTcpClient {
     /**
      * 最大重连次数
      */
-    private int MAX_CONNECT_TIMES = Integer.MAX_VALUE;
+    private int MAX_CONNECT_TIMES = Net.MAX_CONNECT_TIMES;
 
     private int reconnectNum = MAX_CONNECT_TIMES;
 
@@ -184,7 +185,7 @@ public class NettyTcpClient {
 
 
                                 pipeline.addLast(new NettyClientHandler(listener, mIndex, isSendheartBeat,
-                                        heartBeatData,packetSeparator));
+                                        heartBeatData, packetSeparator));
                             }
                         });
 
@@ -199,6 +200,8 @@ public class NettyTcpClient {
                                 channel = channelFuture.channel();
                             } else {
                                 Log.e(TAG, "连接失败");
+                                if (reconnectNum <= 1 && listener != null)
+                                    listener.onClientStatusConnectChanged(ConnectState.STATUS_CONNECT_ERROR, mIndex);
                                 isConnect = false;
                             }
                             isConnecting = false;
@@ -247,7 +250,7 @@ public class NettyTcpClient {
     /**
      * 异步发送
      *
-     * @param data 要发送的数据
+     * @param data     要发送的数据
      * @param listener 发送结果回调
      * @return 方法执行结果
      */
@@ -273,7 +276,7 @@ public class NettyTcpClient {
      */
     public boolean sendMsgToServer(GeneratedMessageV3 data) {
         boolean flag = channel != null && isConnect;
-        Log.e(getClass().getSimpleName(),flag+"");
+        Log.e(getClass().getSimpleName(), flag + "");
         if (flag) {
 //            String separator = TextUtils.isEmpty(packetSeparator) ? System.getProperty("line.separator") : packetSeparator;
             ChannelFuture channelFuture = channel.writeAndFlush(data).awaitUninterruptibly();
@@ -300,7 +303,7 @@ public class NettyTcpClient {
     /**
      * 获取TCP连接状态
      *
-     * @return  获取TCP连接状态
+     * @return 获取TCP连接状态
      */
     public boolean getConnectStatus() {
         return isConnect;

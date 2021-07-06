@@ -1,68 +1,128 @@
 package com.taian.autonet;
 
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.Handler;
 
-
-import com.taian.autonet.client.NettyTcpClient;
+import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.listener.NettyClientListener;
+import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
+import com.taian.autonet.client.utils.ThreadPoolUtil;
 import com.video.netty.protobuf.CommandDataInfo;
 
-import java.io.IOException;
+
+import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 
-/*
- Created by baotaian on 2021/7/5 0005.
-*/
-public class SplashActivity extends AppCompatActivity {
+public class SplashActivity extends BaseActivity {
 
-    private NettyTcpClient mNettyTcpClient;
+    boolean isServerResponsed, isTimeOvered;
+    private Handler mHandler;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
-
-        mNettyTcpClient = new NettyTcpClient.Builder()
-                .setHost("free.idcfengye.com")    //设置服务端地址
-                .setTcpPort(10003) //设置服务端端口号
-                .setMaxReconnectTimes(5)    //设置最大重连次数
-                .setReconnectIntervalTime(5)    //设置重连间隔时间。单位：秒
-                .setSendheartBeat(true) //设置是否发送心跳
-                .setHeartBeatInterval(30)    //设置心跳间隔时间。单位：秒
-                .setHeartBeatData("I'm is HeartBeatData") //设置心跳数据，心跳数据在后面写死了发送数据
-                .setIndex(0)    //设置客户端标识.(因为可能存在多个tcp连接)
-//                .setPacketSeparator("#")//用特殊字符，作为分隔符，解决粘包问题，默认是用换行符作为分隔符
-//                .setMaxPacketLong(1024)//设置一次发送数据的最大长度，默认是1024
-                .build();
-
-        mNettyTcpClient.connect();//连接服务器
-
-
-        mNettyTcpClient.setListener(new NettyClientListener() {
-            @Override
-            public void onMessageResponseClient(Object msg, int index) {
-                Log.e("TAG", msg.toString());
-            }
-
-            @Override
-            public void onClientStatusConnectChanged(int statusCode, int index) {
-                if (statusCode == ConnectState.STATUS_CONNECT_SUCCESS) {
-
-                    CommandDataInfo.TokenCommand tokenCommand = CommandDataInfo.TokenCommand.newBuilder().setToken("abcd").build();
-                    CommandDataInfo.CommandDataInfoMessage command = CommandDataInfo.CommandDataInfoMessage.newBuilder().
-                            setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.TokenType)
-                            .setTokenCommand(tokenCommand).build();
-                    mNettyTcpClient.sendMsgToServer(command);
-                }
-            }
-        }); //设置TCP监听
+        initHandler();
+        connectServerAndGetBaiscInfo();
     }
 
+    private void initHandler() {
+        mHandler = new Handler(getMainLooper());
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (isServerResponsed) {
+                    saveDataAndSkipToLogin();
+                }
+            }
+        }, 2000);
+    }
+
+    private void connectServerAndGetBaiscInfo() {
+        WrapNettyClient.getInstance().connect();
+        WrapNettyClient.getInstance().addNettyClientListener(SplashActivity.class.getSimpleName(),
+                new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
+                    @Override
+                    public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
+                        if (CommandDataInfo.CommandDataInfoMessage.CommandType.ResponseType == message.getDataType()) {
+                            if (message.getResponseCommand().getResponseCode() == Net.SUCCESS) {
+                                isServerResponsed = true;
+                                if (isTimeOvered) {
+                                    saveDataAndSkipToLogin();
+                                }
+                            } else {
+                                mHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        new AlertDialog.Builder(SplashActivity.this).
+                                                setMessage(R.string.illegal_device).
+                                                setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialog, int which) {
+                                                        finish();
+                                                    }
+                                                }).
+                                                show();
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onClientStatusConnectChanged(int statusCode, int index) {
+                        if (statusCode == ConnectState.STATUS_CONNECT_SUCCESS) {
+                            //tcp链接成功
+                            CommandDataInfo.TokenCommand tokenCommand = CommandDataInfo.TokenCommand.newBuilder()
+                                    .setToken("abcd1")
+                                    .build();
+                            CommandDataInfo.CommandDataInfoMessage command = CommandDataInfo.CommandDataInfoMessage.newBuilder()
+                                    .setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.TokenType)
+                                    .setTokenCommand(tokenCommand)
+                                    .build();
+                            WrapNettyClient.getInstance().sendMsgToServer(command);
+                        } else if (statusCode == ConnectState.STATUS_CONNECT_ERROR) {
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    //tcp链接失败
+                                    new AlertDialog.Builder(SplashActivity.this).
+                                            setMessage(R.string.net_error).
+                                            setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which) {
+                                                    saveDataAndSkipToLogin();
+                                                }
+                                            }).
+                                            show();
+                                }
+                            });
+                        }
+                    }
+                });
+    }
+
+    private void saveDataAndSkipToLogin() {
+        //todo 保存app版本信息及节目单信息，到首页去下载节目单
+        Intent intent = new Intent(this, UserLoginActivity.class);
+        startActivity(intent);
+        finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        WrapNettyClient.getInstance().removeListener(SplashActivity.class.getSimpleName());
+        if (mHandler != null) {
+            mHandler.removeCallbacksAndMessages(null);
+            mHandler = null;
+        }
+    }
 }
