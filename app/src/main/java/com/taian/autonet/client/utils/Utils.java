@@ -1,21 +1,34 @@
 package com.taian.autonet.client.utils;
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
+import android.os.Environment;
 import android.text.TextUtils;
+import android.util.Log;
 
+import com.taian.autonet.bean.VideoInfo;
+import com.taian.autonet.client.constant.Constants;
+import com.video.netty.protobuf.CommandDataInfo;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Locale;
 
 public class Utils {
+
+    private static String TAG = "Utils";
 
     /**
      * Android 6.0 之前（不包括6.0）获取mac地址
@@ -134,5 +147,90 @@ public class Utils {
             mac = getMachineHardwareAddress();
         }
         return mac;
+    }
+
+    public static int getAppVersionCode(Context context, String packageName) {
+        if (TextUtils.isEmpty(packageName)) {
+            return -1;
+        } else {
+            try {
+                PackageManager pm = context.getPackageManager();
+                PackageInfo pi = pm.getPackageInfo(packageName, 0);
+                return pi == null ? -1 : pi.versionCode;
+            } catch (PackageManager.NameNotFoundException var4) {
+                var4.printStackTrace();
+                return -1;
+            }
+        }
+    }
+
+    /**
+     * 删除文件
+     *
+     * @param fileName
+     * @return
+     */
+    public static boolean deleteFile(String fileName) {
+        boolean status;
+        SecurityManager checker = new SecurityManager();
+        File file = new File(Constants.FILE_PATH + fileName);
+        if (file.exists()) {
+            checker.checkDelete(file.toString());
+            if (file.isFile()) {
+                try {
+                    file.delete();
+                    status = true;
+                } catch (SecurityException se) {
+                    se.printStackTrace();
+                    status = false;
+                }
+            } else
+                status = false;
+        } else
+            status = false;
+        return status;
+    }
+
+
+    public static String initFolderPath(Context context, String folder) {
+        String filePath = "";
+        if (isSDCardExist()) {
+            filePath = Environment.getExternalStorageDirectory().toString() + Constants.FILE_PATH + folder;
+            File directory = new File(filePath);
+            try {
+                if (!directory.exists()) directory.mkdirs();
+            } catch (Exception e) {
+                Log.e("TAG", e.getMessage());
+            }
+        } else {
+            filePath = Environment.getDownloadCacheDirectory().toString() + Constants.FILE_PATH + folder;
+            File directory = new File(filePath);
+            try {
+                if (!directory.exists()) directory.mkdirs();
+            } catch (Exception e) {
+                Log.e("TAG", e.getMessage());
+            }
+        }
+        return filePath;
+    }
+
+    public static boolean isSDCardExist() {
+        return Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
+    }
+
+
+    public static void exitApp(Context context) {
+        ActivityUtil.finishAllActivity();
+        ActivityUtil.AppExit(context);
+    }
+
+    public static void updateLocalVideos(Context context, CommandDataInfo.ProgramCommand programCommand) {
+        List<CommandDataInfo.VideoInfo> videoInfoList = programCommand.getVideoInfoList();
+        List<VideoInfo> videoInfos = new ArrayList<>();
+        for (CommandDataInfo.VideoInfo info : videoInfoList) {
+            videoInfos.add(VideoInfo.toVideoInfo(info));
+        }
+        //保存信息
+        SpUtils.putString(context, Constants.VIDEO_LIST, GsonUtil.toJson(videoInfos));
     }
 }

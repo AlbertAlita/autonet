@@ -7,6 +7,7 @@ import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.taian.autonet.bean.VideoInfo;
 import com.video.netty.protobuf.CommandDataInfo;
 
 import java.util.HashMap;
@@ -122,11 +123,11 @@ public class SpUtils {
         editor.apply();
     }
 
-    public List<CommandDataInfo.VideoInfo> getCachedVideoList(Context context, String tag) {
+    public static List<VideoInfo> getCachedVideoList(Context context, String tag) {
         String json = getString(context, tag);
         if (TextUtils.isEmpty(json)) {
             return null;
-        } else return new Gson().fromJson(json, new TypeToken<List<CommandDataInfo.VideoInfo>>() {
+        } else return new Gson().fromJson(json, new TypeToken<List<VideoInfo>>() {
         }.getType());
     }
 

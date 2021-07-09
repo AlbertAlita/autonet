@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 
+import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.listener.NettyClientListener;
@@ -15,9 +16,11 @@ import com.taian.autonet.client.status.ConnectState;
 import com.taian.autonet.client.utils.ActivityUtil;
 import com.taian.autonet.client.utils.GsonUtil;
 import com.taian.autonet.client.utils.SpUtils;
+import com.taian.autonet.client.utils.Utils;
 import com.video.netty.protobuf.CommandDataInfo;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 import androidx.annotation.Nullable;
@@ -57,7 +60,7 @@ public class SplashActivity extends BaseActivity {
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
-                        Log.e("TAG", message.toString());
+//                        Log.e("TAG", message.toString());
                         if (CommandDataInfo.CommandDataInfoMessage.CommandType.PackageConfigType == message.getDataType()) {
                             CommandDataInfo.PackageConfigCommand packageConfigCommand = message.getPackageConfigCommand();
                             if (packageConfigCommand.getResponseCommand().getResponseCode() == Net.SUCCESS) {
@@ -77,7 +80,7 @@ public class SplashActivity extends BaseActivity {
                                                 setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
                                                     @Override
                                                     public void onClick(DialogInterface dialog, int which) {
-                                                        exitApp();
+                                                        Utils.exitApp(SplashActivity.this);
                                                     }
                                                 }).
                                                 show();
@@ -131,18 +134,11 @@ public class SplashActivity extends BaseActivity {
                 GsonUtil.toJson(apkVersionCommand));
         //获取节目单信息
         CommandDataInfo.ProgramCommand programCommand = packageConfigCommand.getProgramCommand();
-        List<CommandDataInfo.VideoInfo> videoInfoList = programCommand.getVideoInfoList();
-        //保存信息
-        SpUtils.putString(this, Constants.VIDEO_LIST, GsonUtil.toJson(videoInfoList));
+        //保存节目单到本地
+        Utils.updateLocalVideos(this, programCommand);
         Intent intent = new Intent(this, UserLoginActivity.class);
         startActivity(intent);
         finish();
-    }
-
-
-    private void exitApp() {
-        ActivityUtil.finishAllActivity();
-        ActivityUtil.AppExit(this);
     }
 
     @Override
