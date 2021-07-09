@@ -1,11 +1,4 @@
 package com.taian.autonet.client.handler;
-/*
- Created by baotaian on 2021/7/6 0006.
-*/
-
-
-import android.location.Address;
-import android.os.Looper;
 
 import com.google.protobuf.GeneratedMessageV3;
 import com.taian.autonet.client.NettyTcpClient;
@@ -13,12 +6,8 @@ import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.net.Net;
 import com.video.netty.protobuf.CommandDataInfo;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-
 
 public class WrapNettyClient {
 
@@ -68,6 +57,11 @@ public class WrapNettyClient {
     public void connect() {
         if (mNettyTcpClient != null)
             mNettyTcpClient.connect();
+    }
+
+    public void disConnect() {
+        if (mNettyTcpClient != null)
+            mNettyTcpClient.disconnect();
     }
 
     public void addNettyClientListener(String tag, NettyClientListener listener) {

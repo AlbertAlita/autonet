@@ -5,16 +5,20 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 
+import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
-import com.taian.autonet.client.utils.ThreadPoolUtil;
+import com.taian.autonet.client.utils.ActivityUtil;
+import com.taian.autonet.client.utils.GsonUtil;
+import com.taian.autonet.client.utils.SpUtils;
 import com.video.netty.protobuf.CommandDataInfo;
 
 
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -23,6 +27,7 @@ public class SplashActivity extends BaseActivity {
 
     boolean isServerResponsed, isTimeOvered;
     private Handler mHandler;
+    private CommandDataInfo.PackageConfigCommand packageConfigCommand;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -38,6 +43,7 @@ public class SplashActivity extends BaseActivity {
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
+                isTimeOvered = true;
                 if (isServerResponsed) {
                     saveDataAndSkipToLogin();
                 }
@@ -51,13 +57,18 @@ public class SplashActivity extends BaseActivity {
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
-                        if (CommandDataInfo.CommandDataInfoMessage.CommandType.ResponseType == message.getDataType()) {
-                            if (message.getResponseCommand().getResponseCode() == Net.SUCCESS) {
+                        Log.e("TAG", message.toString());
+                        if (CommandDataInfo.CommandDataInfoMessage.CommandType.PackageConfigType == message.getDataType()) {
+                            CommandDataInfo.PackageConfigCommand packageConfigCommand = message.getPackageConfigCommand();
+                            if (packageConfigCommand.getResponseCommand().getResponseCode() == Net.SUCCESS) {
                                 isServerResponsed = true;
+                                SplashActivity.this.packageConfigCommand = packageConfigCommand;
                                 if (isTimeOvered) {
                                     saveDataAndSkipToLogin();
                                 }
                             } else {
+                                //断开链接
+                                WrapNettyClient.getInstance().disConnect();
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
@@ -66,7 +77,7 @@ public class SplashActivity extends BaseActivity {
                                                 setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
                                                     @Override
                                                     public void onClick(DialogInterface dialog, int which) {
-                                                        finish();
+                                                        exitApp();
                                                     }
                                                 }).
                                                 show();
@@ -81,7 +92,7 @@ public class SplashActivity extends BaseActivity {
                         if (statusCode == ConnectState.STATUS_CONNECT_SUCCESS) {
                             //tcp链接成功
                             CommandDataInfo.TokenCommand tokenCommand = CommandDataInfo.TokenCommand.newBuilder()
-                                    .setToken("abcd1")
+                                    .setToken(AppApplication.getMacAdress())
                                     .build();
                             CommandDataInfo.CommandDataInfoMessage command = CommandDataInfo.CommandDataInfoMessage.newBuilder()
                                     .setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.TokenType)
@@ -110,10 +121,28 @@ public class SplashActivity extends BaseActivity {
     }
 
     private void saveDataAndSkipToLogin() {
-        //todo 保存app版本信息及节目单信息，到首页去下载节目单
+        if (packageConfigCommand == null) {
+            return;
+        }
+        //获取版本号信息
+        CommandDataInfo.ApkVersionCommand apkVersionCommand = packageConfigCommand.getApkVersionCommand();
+        //保存信息
+        SpUtils.putString(this, Constants.LATEST_VERSION_APK_INFO,
+                GsonUtil.toJson(apkVersionCommand));
+        //获取节目单信息
+        CommandDataInfo.ProgramCommand programCommand = packageConfigCommand.getProgramCommand();
+        List<CommandDataInfo.VideoInfo> videoInfoList = programCommand.getVideoInfoList();
+        //保存信息
+        SpUtils.putString(this, Constants.VIDEO_LIST, GsonUtil.toJson(videoInfoList));
         Intent intent = new Intent(this, UserLoginActivity.class);
         startActivity(intent);
         finish();
+    }
+
+
+    private void exitApp() {
+        ActivityUtil.finishAllActivity();
+        ActivityUtil.AppExit(this);
     }
 
     @Override
