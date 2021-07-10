@@ -8,16 +8,20 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.View;
+import android.widget.Toast;
 
 import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.utils.GsonUtil;
+import com.taian.autonet.client.utils.PermissionUtils;
 import com.taian.autonet.client.utils.SpUtils;
 import com.taian.autonet.client.utils.Utils;
 import com.taian.autonet.download.DownloadDelegate;
 import com.taian.autonet.download.DownloadInfo;
+import com.taian.autonet.view.StandardVideoController;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.video.netty.protobuf.CommandDataInfo;
 
@@ -25,9 +29,12 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.File;
 import java.util.List;
 
+import io.reactivex.ObservableTransformer;
 import io.reactivex.functions.Consumer;
+import xyz.doikki.videoplayer.player.VideoView;
 
 public class MainActivity extends BaseActivity {
 
@@ -35,6 +42,8 @@ public class MainActivity extends BaseActivity {
     private DownloadDelegate mDownloadDelegate;
     private ProgressDialog mProgressDialog;
     private Handler mHandler;
+    private VideoView mVideoView;
+    private StandardVideoController mController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,10 +51,18 @@ public class MainActivity extends BaseActivity {
         setContentView(R.layout.activity_main);
 
         mHandler = new Handler(getMainLooper());
+        mVideoView = findViewById(R.id.player);
+
         initPermission();
-        checkApkInfo();
+        initPlayer();
         downloadVideos();
         registerCommandListenter();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mVideoView != null) mVideoView.resume();
     }
 
     @Override
@@ -55,35 +72,84 @@ public class MainActivity extends BaseActivity {
             EventBus.getDefault().register(this);
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mVideoView != null) mVideoView.pause();
+    }
+
+
+
+    private void initPlayer() {
+        mController = new StandardVideoController(this);
+        mController.addDefaultControlComponent("", false);
+        mController.setListener(new StandardVideoController.PlayStateChangedListener() {
+            @Override
+            public void onPlayStateChanged(int state) {
+                switch (state) {
+                    //播放结束
+                    case VideoView.STATE_PLAYBACK_COMPLETED:
+                        if (mDownloadDelegate != null) {
+                            mDownloadDelegate.updateIndex();
+                            mDownloadDelegate.startDownload();
+                        }
+                        break;
+                    case VideoView.STATE_ERROR:
+                        new AlertDialog.Builder(MainActivity.this).
+                                setMessage(R.string.play_error).
+                                setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        if (mDownloadDelegate != null)
+                                            mDownloadDelegate.reDownload();
+                                    }
+                                }).
+                                setNegativeButton(R.string.cancle, null).
+                                show();
+                        break;
+                }
+            }
+        });
+    }
+
     /**
      * 初始化权限
      */
     private void initPermission() {
-        mRxPermission = new RxPermissions(this);
-        mRxPermission.request(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                .subscribe(new Consumer<Boolean>() {
-                    @SuppressLint("CheckResult")
-                    @Override
-                    public void accept(Boolean agree) throws Exception {
-                        if (agree) {
-                            //初始化log文件夹
-                            Utils.initFolderPath(MainActivity.this, Constants.LOG_PATH);
-                            //初始化文件缓存文件夹
-                            AppApplication.COMPLETE_CACHE_PATH =
-                                    Utils.initFolderPath(MainActivity.this, Constants.CACHE_PATH);
-                        } else {
-                            new AlertDialog.Builder(MainActivity.this).
-                                    setMessage(R.string.none_permission_warning).
-                                    setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            Utils.exitApp(MainActivity.this);
-                                        }
-                                    }).
-                                    show();
+        List<Integer> index = PermissionUtils.checkPermissions(this, PermissionUtils.permissionsREAD);
+        if (index.isEmpty()) {
+            initFolder();
+        } else {
+            mRxPermission = new RxPermissions(this);
+            mRxPermission.request(PermissionUtils.permissionsREAD)
+                    .subscribe(new Consumer<Boolean>() {
+                        @SuppressLint("CheckResult")
+                        @Override
+                        public void accept(Boolean agree) throws Exception {
+                            if (agree) {
+                                initFolder();
+                            } else {
+                                new AlertDialog.Builder(MainActivity.this).
+                                        setMessage(R.string.none_permission_warning).
+                                        setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                Utils.exitApp(MainActivity.this);
+                                            }
+                                        }).
+                                        show();
+                            }
                         }
-                    }
-                });
+                    });
+        }
+    }
+
+    private void initFolder() {
+        //初始化log文件夹
+        Utils.initFolderPath(MainActivity.this, Constants.LOG_PATH);
+        //初始化文件缓存文件夹
+        AppApplication.COMPLETE_CACHE_PATH =
+                Utils.initFolderPath(MainActivity.this, Constants.CACHE_PATH);
     }
 
     /**
@@ -113,18 +179,29 @@ public class MainActivity extends BaseActivity {
     public void update(DownloadInfo info) {
         if (info == null) return;
         if (DownloadInfo.DOWNLOAD.equals(info.getDownloadStatus())) {
-            float progress = info.getProgress() / info.getTotal() * 100;
-            showProgressDialog(getString(R.string.video_downloading), progress);
+            float progress = (float) info.getProgress() / (float) info.getTotal() * 100;
+            showProgressDialog(getString(
+//                    progress == 0 ? R.string.linking_res :
+                    R.string.video_downloading), progress);
         } else if (DownloadInfo.DOWNLOAD_OVER.equals(info.getDownloadStatus())) {
-            //下载结束
-            if (mProgressDialog != null) mProgressDialog.cancel();
+            //下载结束,发现本地有缓存视频也会走这个回调
+            if (mProgressDialog != null) {
+                mProgressDialog.dismiss();
+                mProgressDialog = null;
+            }
+            String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + info.getFileName();
+            mVideoView.release();
+            mController.getTitleView().setTitle(info.getFileName());
+            mVideoView.setVideoController(mController); //设置控制器
+            mVideoView.setUrl(localPath);
+            mVideoView.start();
         } else if (DownloadInfo.DOWNLOAD_PAUSE.equals(info.getDownloadStatus())) {
             //暂停下载。目前没这功能
         } else if (DownloadInfo.DOWNLOAD_CANCEL.equals(info.getDownloadStatus())) {
             //取消下载，目前没这功能
         } else if (DownloadInfo.DOWNLOAD_ERROR.equals(info.getDownloadStatus())) {
             Log.e(getClass().getSimpleName(), info.getMsg());
-            if (mProgressDialog != null) mProgressDialog.cancel();
+            if (mProgressDialog != null) mProgressDialog.dismiss();
             new AlertDialog.Builder(this).
                     setMessage(R.string.download_error).
                     setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
@@ -169,23 +246,34 @@ public class MainActivity extends BaseActivity {
             mProgressDialog.setTitle(title);
             mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
             mProgressDialog.setMax(100);
-            mProgressDialog.show();
         }
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mProgressDialog.setProgress((int) progress);
+                if (mProgressDialog != null) {
+                    mProgressDialog.setMax(100);
+                    mProgressDialog.setProgress((int) progress);
+                }
             }
         }, 1000);
+        if (!mProgressDialog.isShowing()) mProgressDialog.show();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (mVideoView != null) mVideoView.release();
         EventBus.getDefault().unregister(this);
         if (mHandler != null) {
             mHandler.removeCallbacksAndMessages(null);
             mHandler = null;
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (!mVideoView.onBackPressed()) {
+            super.onBackPressed();
         }
     }
 }

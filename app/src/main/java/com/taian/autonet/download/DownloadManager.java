@@ -67,7 +67,7 @@ public class DownloadManager {
      *
      * @param url 下载请求的网址
      */
-    public void download(String url) {
+    public void download(String url, final String fileName) {
 
         Observable.just(url)
                 .filter(new Predicate<String>() { // 过滤 call的map中已经有了,就证明正在下载,则这次不下载
@@ -79,7 +79,7 @@ public class DownloadManager {
                 .map(new Function<String, DownloadInfo>() { // 生成 DownloadInfo
                     @Override
                     public DownloadInfo apply(String s) {
-                        return createDownInfo(s);
+                        return createDownInfo(s, fileName);
                     }
                 })
                 .map(new Function<Object, DownloadInfo>() { // 如果已经下载，重新命名
@@ -131,11 +131,11 @@ public class DownloadManager {
      * @param url 请求网址
      * @return DownInfo
      */
-    private DownloadInfo createDownInfo(String url) {
+    private DownloadInfo createDownInfo(String url, String fileName) {
         DownloadInfo downloadInfo = new DownloadInfo(url);
         long contentLength = getContentLength(url);//获得文件大小
         downloadInfo.setTotal(contentLength);
-        String fileName = url.substring(url.lastIndexOf("/"));
+//        String fileName = url.substring(url.lastIndexOf("/"));
         downloadInfo.setFileName(fileName);
         return downloadInfo;
     }
@@ -160,21 +160,21 @@ public class DownloadManager {
             downloadLength = file.length();
         }
         //之前下载过,需要重新来一个文件
-        int i = 1;
-        while (downloadLength >= contentLength) {
-            int dotIndex = fileName.lastIndexOf(".");
-            String fileNameOther;
-            if (dotIndex == -1) {
-                fileNameOther = fileName + "(" + i + ")";
-            } else {
-                fileNameOther = fileName.substring(0, dotIndex)
-                        + "(" + i + ")" + fileName.substring(dotIndex);
-            }
-            File newFile = new File(videoRootPath, fileNameOther);
-            file = newFile;
-            downloadLength = newFile.length();
-            i++;
-        }
+//        int i = 1;
+//        while (downloadLength >= contentLength) {
+//            int dotIndex = fileName.lastIndexOf(".");
+//            String fileNameOther;
+//            if (dotIndex == -1) {
+//                fileNameOther = fileName + "(" + i + ")";
+//            } else {
+//                fileNameOther = fileName.substring(0, dotIndex)
+//                        + "(" + i + ")" + fileName.substring(dotIndex);
+//            }
+//            File newFile = new File(videoRootPath, fileNameOther);
+//            file = newFile;
+//            downloadLength = newFile.length();
+//            i++;
+//        }
         //设置改变过的文件名/大小
         downloadInfo.setProgress(downloadLength);
         downloadInfo.setFileName(file.getName());
@@ -194,6 +194,12 @@ public class DownloadManager {
             String url = downloadInfo.getUrl();
             long downloadLength = downloadInfo.getProgress();//已经下载好的长度
             long contentLength = downloadInfo.getTotal();//文件的总长度
+            //已经下载给过了
+            if (downloadLength >= contentLength) {
+//                downloadInfo.setDownloadStatus(DownloadInfo.DOWNLOAD_OVER);
+                e.onNext(downloadInfo);
+                return;
+            }
             //初始进度信息
             e.onNext(downloadInfo);
             Request request = new Request.Builder()

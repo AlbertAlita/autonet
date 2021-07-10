@@ -10,6 +10,7 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.taian.autonet.AppApplication;
 import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.constant.Constants;
 import com.video.netty.protobuf.CommandDataInfo;
@@ -173,7 +174,9 @@ public class Utils {
     public static boolean deleteFile(String fileName) {
         boolean status;
         SecurityManager checker = new SecurityManager();
-        File file = new File(Constants.FILE_PATH + fileName);
+        File file = new File(AppApplication.COMPLETE_CACHE_PATH + File.separator + fileName);
+        Log.e(TAG, "deleteFile: "+ file.getAbsolutePath() );
+
         if (file.exists()) {
             checker.checkDelete(file.toString());
             if (file.isFile()) {
@@ -181,13 +184,17 @@ public class Utils {
                     file.delete();
                     status = true;
                 } catch (SecurityException se) {
-                    se.printStackTrace();
+                    Log.e(TAG, "deleteFile: " + se.getMessage());
                     status = false;
                 }
-            } else
+            } else {
+                Log.e(TAG, "deleteFile:1 " );
                 status = false;
-        } else
+            }
+        } else {
             status = false;
+
+        }
         return status;
     }
 

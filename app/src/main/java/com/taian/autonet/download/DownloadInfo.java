@@ -84,4 +84,17 @@ public class DownloadInfo {
     public void setFileType(int fileType) {
         this.fileType = fileType;
     }
+
+    @Override
+    public String toString() {
+        return "DownloadInfo{" +
+                "url='" + url + '\'' +
+                ", fileName='" + fileName + '\'' +
+                ", downloadStatus='" + downloadStatus + '\'' +
+                ", total=" + total +
+                ", progress=" + progress +
+                ", fileType=" + fileType +
+                ", msg='" + msg + '\'' +
+                '}';
+    }
 }

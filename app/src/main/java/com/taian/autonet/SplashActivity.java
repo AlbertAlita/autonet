@@ -3,9 +3,12 @@ package com.taian.autonet;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
 
 import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.constant.Constants;
@@ -37,8 +40,17 @@ public class SplashActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
+        initView();
         initHandler();
         connectServerAndGetBaiscInfo();
+    }
+
+    private void initView() {
+        Typeface fontFace = Typeface.createFromAsset(getAssets(), "xingshu.TTF");
+        TextView title = findViewById(R.id.title);
+        TextView subtitle = findViewById(R.id.subtitle);
+        title.setTypeface(fontFace);
+        subtitle.setTypeface(fontFace);
     }
 
     private void initHandler() {
@@ -51,7 +63,7 @@ public class SplashActivity extends BaseActivity {
                     saveDataAndSkipToLogin();
                 }
             }
-        }, 2000);
+        }, 3000);
     }
 
     private void connectServerAndGetBaiscInfo() {
@@ -136,7 +148,7 @@ public class SplashActivity extends BaseActivity {
         CommandDataInfo.ProgramCommand programCommand = packageConfigCommand.getProgramCommand();
         //保存节目单到本地
         Utils.updateLocalVideos(this, programCommand);
-        Intent intent = new Intent(this, UserLoginActivity.class);
+        Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
         finish();
     }
@@ -145,9 +157,16 @@ public class SplashActivity extends BaseActivity {
     protected void onDestroy() {
         super.onDestroy();
         WrapNettyClient.getInstance().removeListener(SplashActivity.class.getSimpleName());
+        WrapNettyClient.getInstance().disConnect();
         if (mHandler != null) {
             mHandler.removeCallbacksAndMessages(null);
             mHandler = null;
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        Utils.exitApp(this);
     }
 }
