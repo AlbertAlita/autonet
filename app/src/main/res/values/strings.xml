@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">autonet</string>
+    <string name="app_name">蕴康</string>
     <string name="confirm">确定</string>
     <string name="net_error">连接服务器失败</string>
     <string name="illegal_device">非法设备！</string>
@@ -19,4 +19,9 @@
     <string name="dkplayer_lock_tip">请先解锁屏幕</string>
     <string name="play_error">视频播放失败，是否尝试重新下载播放？</string>
     <string name="linking_res">连接视频资源中</string>
+    <string name="upgrading_app">程序升级中,请稍等...</string>
+    <string name="download_error_apk">系统升级失败，是否进入老版本？</string>
+    <string name="none_root">设备尚未root！</string>
+    <string name="upgrading_and_install_failed">升级安装失败！</string>
+    <string name="unkown_error">位置错误-apk!</string>
 </resources>

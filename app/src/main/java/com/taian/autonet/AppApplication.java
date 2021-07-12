@@ -64,4 +64,8 @@ public class AppApplication extends Application {
                 }
             };
 
+    public static String getDefaultRootPath() {
+        return COMPLETE_CACHE_PATH + File.separator;
+    }
+
 }

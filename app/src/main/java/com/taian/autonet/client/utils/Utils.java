@@ -1,5 +1,6 @@
 package com.taian.autonet.client.utils;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -11,10 +12,14 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.taian.autonet.AppApplication;
+import com.taian.autonet.bean.ApkInfo;
 import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.constant.Constants;
 import com.video.netty.protobuf.CommandDataInfo;
 
+import java.io.BufferedReader;
+import java.io.Closeable;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,7 +27,6 @@ import java.io.LineNumberReader;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
@@ -30,6 +34,13 @@ import java.util.Locale;
 public class Utils {
 
     private static String TAG = "Utils";
+    private static final String[] SU_BINARY_DIRS = {
+            "/system/bin",
+            "/system/sbin",
+            "/system/xbin",
+            "/vendor/bin",
+            "/sbin"
+    };
 
     /**
      * Android 6.0 之前（不包括6.0）获取mac地址
@@ -175,7 +186,6 @@ public class Utils {
         boolean status;
         SecurityManager checker = new SecurityManager();
         File file = new File(AppApplication.COMPLETE_CACHE_PATH + File.separator + fileName);
-        Log.e(TAG, "deleteFile: "+ file.getAbsolutePath() );
 
         if (file.exists()) {
             checker.checkDelete(file.toString());
@@ -188,7 +198,7 @@ public class Utils {
                     status = false;
                 }
             } else {
-                Log.e(TAG, "deleteFile:1 " );
+                Log.e(TAG, "deleteFile:1 ");
                 status = false;
             }
         } else {
@@ -239,5 +249,68 @@ public class Utils {
         }
         //保存信息
         SpUtils.putString(context, Constants.VIDEO_LIST, GsonUtil.toJson(videoInfos));
+    }
+
+    @SuppressLint("LogUtilsNotUsed")
+    public static boolean runRootCmd(String cmd) {
+        boolean grandted;
+        DataOutputStream outputStream = null;
+        BufferedReader reader = null;
+        try {
+            Process process = Runtime.getRuntime().exec("su");
+            outputStream = new DataOutputStream(process.getOutputStream());
+            outputStream.writeBytes(cmd + "\n");
+            outputStream.writeBytes("exit\n");
+            outputStream.flush();
+            process.waitFor();
+            reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            grandted = true;
+
+            String msg = reader.readLine();
+            if (msg != null) {
+                Log.e(TAG, msg);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            grandted = false;
+
+            closeIO(outputStream);
+            closeIO(reader);
+        }
+        return grandted;
+    }
+
+    private static void closeIO(Closeable closeable) {
+        try {
+            if (closeable != null) {
+                closeable.close();
+            }
+        } catch (Exception e) {
+        }
+    }
+
+
+    public static boolean checkRoot() {
+        boolean isRoot = false;
+        try {
+            for (String dir : SU_BINARY_DIRS) {
+                File su = new File(dir, "su");
+                if (su.exists()) {
+                    isRoot = true;
+                    break;
+                }
+            }
+        } catch (Exception e) {
+        }
+        return isRoot;
+    }
+
+    public static int installPkg(String apkPath) {
+        if (checkRoot()) {
+            int state = runRootCmd("pm install -i 包名 --user 0 " + apkPath) ? ApkInfo.INSTALLING : ApkInfo.INSTALL_FAILED;
+            return state;
+        } else {
+            return ApkInfo.NONE_ROOT;
+        }
     }
 }
