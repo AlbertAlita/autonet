@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 public class CusDownloadListener implements DownloadListener {
+    protected long totalSize;
 
     @Override
     public void taskStart(@NonNull DownloadTask task) {
@@ -40,6 +41,7 @@ public class CusDownloadListener implements DownloadListener {
     @Override
     public void downloadFromBreakpoint(@NonNull DownloadTask task, @NonNull BreakpointInfo info) {
         Log.e("CusDownloadListener", "downloadFromBreakpoint");
+        totalSize = info.getTotalLength();
     }
 
     @Override

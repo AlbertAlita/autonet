@@ -24,4 +24,5 @@
     <string name="none_root">设备尚未root！</string>
     <string name="upgrading_and_install_failed">升级安装失败！</string>
     <string name="unkown_error">位置错误-apk!</string>
+    <string name="system_upgrading">系统升级中...</string>
 </resources>

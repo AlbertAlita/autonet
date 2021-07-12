@@ -38,6 +38,7 @@ import java.util.List;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+
 import io.reactivex.functions.Consumer;
 
 public class SplashActivity extends BaseActivity {
@@ -250,24 +251,23 @@ public class SplashActivity extends BaseActivity {
     }
 
     CusDownloadListener listener = new CusDownloadListener() {
-        @Override
-        public void taskStart(@NonNull DownloadTask task) {
-            super.taskStart(task);
-        }
 
         @Override
         public void fetchProgress(@NonNull DownloadTask task, int blockIndex, long increaseBytes) {
             super.fetchProgress(task, blockIndex, increaseBytes);
-
+            float percent = (float) increaseBytes / totalSize * 100;
+            showProgressDialog(getString(R.string.system_upgrading), percent);
         }
 
         @Override
         public void taskEnd(@NonNull DownloadTask task, @NonNull EndCause cause, @Nullable Exception realCause) {
             super.taskEnd(task, cause, realCause);
             if (cause == EndCause.COMPLETED) {
+                if (mProgressDialog != null) mProgressDialog.dismiss();
                 String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
                 int state = Utils.installPkg(localPath);
                 if (state != ApkInfo.INSTALLING) showErrorDialog(state);
+//                else startActivity(new Intent());
             } else if (cause == EndCause.ERROR) {
                 if (mProgressDialog != null) mProgressDialog.dismiss();
                 showErrorDialog(ApkInfo.DOWNLOAD_FAILED);
@@ -275,31 +275,6 @@ public class SplashActivity extends BaseActivity {
         }
     };
 
-
-//    @Subscribe(threadMode = ThreadMode.MAIN)
-//    public void update(final DownloadInfo info) {
-//        if (info == null) return;
-//        if (DownloadInfo.DOWNLOAD.equals(info.getDownloadStatus())) {
-//            float progress = (float) info.getProgress() / (float) info.getTotal() * 100;
-//            showProgressDialog(getString(R.string.upgrading_app), progress);
-//        } else if (DownloadInfo.DOWNLOAD_OVER.equals(info.getDownloadStatus())) {
-//            String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + info.getFileName();
-//            int state = Utils.installPkg(localPath);
-//            if (state != ApkInfo.INSTALLING) showErrorDialog(state);
-//        } else if (DownloadInfo.DOWNLOAD_PAUSE.equals(info.getDownloadStatus())) {
-//            //暂停下载。目前没这功能
-//        } else if (DownloadInfo.DOWNLOAD_CANCEL.equals(info.getDownloadStatus())) {
-//            //取消下载，目前没这功能
-//        } else if (DownloadInfo.DOWNLOAD_ERROR.equals(info.getDownloadStatus())) {
-//            if (mProgressDialog != null) mProgressDialog.dismiss();
-//            showErrorDialog(ApkInfo.DOWNLOAD_FAILED);
-//        } else if (DownloadInfo.DOWNLOAD_BEYOND_INDEX.equals(info.getDownloadStatus())) {
-//            new AlertDialog.Builder(this).
-//                    setMessage(R.string.last_video).
-//                    setNegativeButton(R.string.confirm, null).
-//                    show();
-//        }
-//    }
 
     private void showErrorDialog(final int state) {
         if (errorDiaolog == null)
