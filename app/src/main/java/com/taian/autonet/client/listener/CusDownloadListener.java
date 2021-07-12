@@ -70,6 +70,6 @@ public class CusDownloadListener implements DownloadListener {
     @Override
     public void taskEnd(@NonNull DownloadTask task, @NonNull EndCause cause, @Nullable Exception realCause) {
         Log.e("CusDownloadListener", "taskEnd ------ " + cause.toString() +
-                " ---- " + (realCause == null ? "" : realCause.getMessage());
+                " ---- " + (realCause == null ? "" : realCause.getMessage()));
     }
 }
