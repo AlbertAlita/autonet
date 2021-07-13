@@ -1,45 +1,40 @@
 package com.taian.autonet;
 
 
-import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
-import android.text.TextUtils;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.liulishuo.okdownload.DownloadListener;
 import com.liulishuo.okdownload.DownloadTask;
-import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo;
+import com.liulishuo.okdownload.SpeedCalculator;
 import com.liulishuo.okdownload.core.cause.EndCause;
-import com.liulishuo.okdownload.core.cause.ResumeFailedCause;
-import com.liulishuo.okdownload.core.listener.DownloadListener1;
 import com.taian.autonet.bean.ApkInfo;
-import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.listener.CusDownloadListener;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
-import com.taian.autonet.client.utils.PermissionUtils;
+import com.taian.autonet.client.utils.ActivityUtil;
 import com.taian.autonet.client.utils.Utils;
-import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.video.netty.protobuf.CommandDataInfo;
 
 import java.io.File;
-import java.util.List;
+import java.util.concurrent.Delayed;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
-import io.reactivex.functions.Consumer;
 
 public class SplashActivity extends BaseActivity {
 
@@ -48,7 +43,12 @@ public class SplashActivity extends BaseActivity {
     private CommandDataInfo.PackageConfigCommand packageConfigCommand;
     private ProgressDialog mProgressDialog;
     private AlertDialog errorDiaolog;
-    private RxPermissions mRxPermission;
+
+    public interface Const {
+        int FOR_NEW_IP = 0x01;
+        int DELAYED_OPT = 0x02;
+
+    }
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -67,19 +67,34 @@ public class SplashActivity extends BaseActivity {
         TextView subtitle = findViewById(R.id.subtitle);
         title.setTypeface(fontFace);
         subtitle.setTypeface(fontFace);
+        findViewById(R.id.iv_setting).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mHandler != null) {
+                    mHandler.removeCallbacksAndMessages(null);
+                    startActivityForResult(new Intent(SplashActivity.this, SettingActivity.class), Const.FOR_NEW_IP);
+                }
+            }
+        });
     }
 
     private void initHandler() {
-        mHandler = new Handler(getMainLooper());
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                isTimeOvered = true;
-                if (isServerResponsed) {
-                    checkApkInfoAndSaveDataAndSkipToLogin();
+        if (mHandler == null)
+            mHandler = new Handler(getMainLooper()) {
+                @Override
+                public void handleMessage(@NonNull Message msg) {
+                    super.handleMessage(msg);
+                    switch (msg.what) {
+                        case Const.DELAYED_OPT:
+                            isTimeOvered = true;
+                            if (isServerResponsed) {
+                                checkApkInfoAndSaveDataAndSkipToLogin();
+                            }
+                            break;
+                    }
                 }
-            }
-        }, 3000);
+            };
+        mHandler.sendEmptyMessageDelayed(Const.DELAYED_OPT, 3000);
     }
 
     private void connectServerAndGetBaiscInfo() {
@@ -105,12 +120,6 @@ public class SplashActivity extends BaseActivity {
                                     public void run() {
                                         new AlertDialog.Builder(SplashActivity.this).
                                                 setMessage(R.string.illegal_device).
-                                                setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
-                                                    @Override
-                                                    public void onClick(DialogInterface dialog, int which) {
-                                                        Utils.exitApp(SplashActivity.this);
-                                                    }
-                                                }).
                                                 show();
                                     }
                                 });
@@ -122,6 +131,7 @@ public class SplashActivity extends BaseActivity {
                     public void onClientStatusConnectChanged(int statusCode, int index) {
                         if (statusCode == ConnectState.STATUS_CONNECT_SUCCESS) {
                             //tcp链接成功
+                            Log.e("TAG", "tcp链接成功");
                             CommandDataInfo.TokenCommand tokenCommand = CommandDataInfo.TokenCommand.newBuilder()
                                     .setToken(AppApplication.getMacAdress())
                                     .build();
@@ -135,57 +145,12 @@ public class SplashActivity extends BaseActivity {
                                 @Override
                                 public void run() {
                                     //tcp链接失败
-                                    new AlertDialog.Builder(SplashActivity.this).
-                                            setMessage(R.string.net_error).
-                                            setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which) {
-                                                    checkApkInfoAndSaveDataAndSkipToLogin();
-                                                }
-                                            }).
-                                            show();
+                                    Toast.makeText(SplashActivity.this, R.string.net_error, Toast.LENGTH_LONG).show();
                                 }
                             });
                         }
                     }
                 });
-    }
-
-    private void initPermission() {
-        List<Integer> index = PermissionUtils.checkPermissions(this, PermissionUtils.permissionsREAD);
-        if (index.isEmpty()) {
-            initFolder();
-        } else {
-            mRxPermission = new RxPermissions(this);
-            mRxPermission.request(PermissionUtils.permissionsREAD)
-                    .subscribe(new Consumer<Boolean>() {
-                        @SuppressLint("CheckResult")
-                        @Override
-                        public void accept(Boolean agree) throws Exception {
-                            if (agree) {
-                                initFolder();
-                            } else {
-                                new AlertDialog.Builder(SplashActivity.this).
-                                        setMessage(R.string.none_permission_warning).
-                                        setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                Utils.exitApp(SplashActivity.this);
-                                            }
-                                        }).
-                                        show();
-                            }
-                        }
-                    });
-        }
-    }
-
-    private void initFolder() {
-        //初始化log文件夹
-        Utils.initFolderPath(SplashActivity.this, Constants.LOG_PATH);
-        //初始化文件缓存文件夹
-        AppApplication.COMPLETE_CACHE_PATH =
-                Utils.initFolderPath(SplashActivity.this, Constants.CACHE_PATH);
     }
 
     private void checkApkInfoAndSaveDataAndSkipToLogin() {
@@ -194,27 +159,16 @@ public class SplashActivity extends BaseActivity {
         }
         //获取版本号信息
         CommandDataInfo.ApkVersionCommand apkVersionCommand = packageConfigCommand.getApkVersionCommand();
-//        if (Utils.getAppVersionCode(this, getPackageName()) < apkVersionCommand.getVersion()) {
-        String url = apkVersionCommand.getFilePath();
-        startDownload(url);
-//        }
-//        else saveVideos();
+        if (Utils.getAppVersionCode(this, getPackageName()) < apkVersionCommand.getVersion()) {
+            String url = apkVersionCommand.getFilePath();
+            startDownload(url);
+        } else saveVideos();
     }
 
     private void startDownload(String url) {
-        DownloadTask task = new DownloadTask.Builder(url, AppApplication.COMPLETE_CACHE_PATH, Constants.APP_APK_NAME) //设置下载地址和下载目录，这两个是必须的参数
-                .setFilename(Constants.APP_APK_NAME)
-                .setFilenameFromResponse(false)//是否使用 response header or url path 作为文件名，此时会忽略指定的文件名，默认false
-                .setConnectionCount(1)  //需要用几个线程来下载文件，默认根据文件大小确定；如果文件已经 split block，则设置后无效
-                .setPreAllocateLength(false) //在获取资源长度后，设置是否需要为文件预分配长度，默认false
-                .setMinIntervalMillisCallbackProcess(1000) //通知调用者的频率，避免anr，默认3000
-                .setWifiRequired(false)//是否只允许wifi下载，默认为false
-                .setAutoCallbackToUIThread(true) //是否在主线程通知调用者，默认为true
-                .setPriority(0)//设置优先级，默认值是0，值越大下载优先级越高
-                .setReadBufferSize(4096)//设置读取缓存区大小，默认4096
-                .setFlushBufferSize(16384)//设置写入缓存区大小，默认16384
-                .setSyncBufferSize(65536)//写入到文件的缓冲区大小，默认65536
-                .setSyncBufferIntervalMillis(2000) //写入文件的最小时间间隔，默认2000
+        DownloadTask task = new DownloadTask.Builder(url,
+                AppApplication.COMPLETE_CACHE_PATH, Constants.APP_APK_NAME) //设置下载地址和下载目录，这两个是必须的参数
+                .setSyncBufferIntervalMillis(64) //写入文件的最小时间间隔，默认2000
                 .build();
         task.enqueue(listener);
     }
@@ -225,9 +179,9 @@ public class SplashActivity extends BaseActivity {
         CommandDataInfo.ProgramCommand programCommand = packageConfigCommand.getProgramCommand();
         //保存节目单到本地
         Utils.updateLocalVideos(this, programCommand);
-//        Intent intent = new Intent(this, MainActivity.class);
-//        startActivity(intent);
-//        finish();
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
+        finish();
     }
 
     private void showProgressDialog(String title, final float progress) {
@@ -253,21 +207,23 @@ public class SplashActivity extends BaseActivity {
     CusDownloadListener listener = new CusDownloadListener() {
 
         @Override
-        public void fetchProgress(@NonNull DownloadTask task, int blockIndex, long increaseBytes) {
-            super.fetchProgress(task, blockIndex, increaseBytes);
-            float percent = (float) increaseBytes / totalSize * 100;
+        public void progress(@NonNull DownloadTask task, long currentOffset, @NonNull SpeedCalculator taskSpeed) {
+            super.progress(task, currentOffset, taskSpeed);
+            float percent = (float) currentOffset / totalLength * 100;
             showProgressDialog(getString(R.string.system_upgrading), percent);
         }
 
         @Override
-        public void taskEnd(@NonNull DownloadTask task, @NonNull EndCause cause, @Nullable Exception realCause) {
+        public void taskEnd(@NonNull final DownloadTask task, @NonNull EndCause cause,
+                            @Nullable Exception realCause, @NonNull SpeedCalculator taskSpeed) {
             super.taskEnd(task, cause, realCause);
+            if (cause == null) return;
             if (cause == EndCause.COMPLETED) {
-                if (mProgressDialog != null) mProgressDialog.dismiss();
                 String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
                 int state = Utils.installPkg(localPath);
+                if (mProgressDialog != null) mProgressDialog.dismiss();
                 if (state != ApkInfo.INSTALLING) showErrorDialog(state);
-//                else startActivity(new Intent());
+                else Utils.reStartApp(SplashActivity.this);
             } else if (cause == EndCause.ERROR) {
                 if (mProgressDialog != null) mProgressDialog.dismiss();
                 showErrorDialog(ApkInfo.DOWNLOAD_FAILED);
@@ -293,6 +249,22 @@ public class SplashActivity extends BaseActivity {
                     }).create();
         errorDiaolog.setMessage(ApkInfo.getErrorTips(this, state));
         errorDiaolog.show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == Const.FOR_NEW_IP) {
+            if (mHandler != null)
+                mHandler.sendEmptyMessageDelayed(Const.DELAYED_OPT, 3000);
+            WrapNettyClient.getInstance().connect();
+        }
+    }
+
+    @Override
+    protected void onNetConnect() {
+        Toast.makeText(this, R.string.net_available, Toast.LENGTH_LONG).show();
+        WrapNettyClient.getInstance().connect();
     }
 
     @Override

@@ -14,4 +14,8 @@ public interface Constants {
     String CACHE_PATH = "cache";
 
     String APP_APK_NAME = "yunkang.apk";
+
+    String IP = "IP";
+
+    String PORT = "PORT";
 }

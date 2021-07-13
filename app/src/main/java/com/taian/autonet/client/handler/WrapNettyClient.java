@@ -1,6 +1,9 @@
 package com.taian.autonet.client.handler;
 
+import android.text.TextUtils;
+
 import com.google.protobuf.GeneratedMessageV3;
+import com.taian.autonet.AppApplication;
 import com.taian.autonet.client.NettyTcpClient;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.net.Net;
@@ -27,10 +30,17 @@ public class WrapNettyClient {
         return instance;
     }
 
+    public void resetIp() {
+        mNettyTcpClient.setHost(AppApplication.getIP());
+        mNettyTcpClient.setTcp_port(AppApplication.getPort());
+    }
+
     private WrapNettyClient() {
+        String ip = AppApplication.getIP();
+        int port = AppApplication.getPort();
         mNettyTcpClient = new NettyTcpClient.Builder()
-                .setHost(Net.URL)    //设置服务端地址
-                .setTcpPort(Net.port) //设置服务端端口号
+                .setHost(TextUtils.isEmpty(ip) ? Net.URL : ip)    //设置服务端地址
+                .setTcpPort(port == -1 ? Net.port : port) //设置服务端端口号
                 .setMaxReconnectTimes(Net.MAX_CONNECT_TIMES)    //设置最大重连次数
                 .setReconnectIntervalTime(Net.RECONNECT_INTERVAL_TIME)    //设置重连间隔时间。单位：秒
                 .setSendheartBeat(true) //设置是否发送心跳

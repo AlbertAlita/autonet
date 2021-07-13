@@ -114,6 +114,14 @@ public class NettyTcpClient {
         return host;
     }
 
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public void setTcp_port(int tcp_port) {
+        this.tcp_port = tcp_port;
+    }
+
     public int getTcp_port() {
         return tcp_port;
     }
@@ -190,6 +198,7 @@ public class NettyTcpClient {
                         });
 
                 try {
+                    Log.e("TAG",host);
                     channelFuture = bootstrap.connect(host, tcp_port).addListener(new ChannelFutureListener() {
                         @Override
                         public void operationComplete(ChannelFuture channelFuture) throws Exception {
@@ -231,6 +240,7 @@ public class NettyTcpClient {
 
     public void disconnect() {
         Log.e(TAG, "disconnect");
+        if (group == null) return;
         isNeedReconnect = false;
         group.shutdownGracefully();
     }

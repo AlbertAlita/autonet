@@ -5,9 +5,13 @@ import android.util.Log;
 
 import com.liulishuo.okdownload.DownloadListener;
 import com.liulishuo.okdownload.DownloadTask;
+import com.liulishuo.okdownload.SpeedCalculator;
+import com.liulishuo.okdownload.core.breakpoint.BlockInfo;
 import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo;
 import com.liulishuo.okdownload.core.cause.EndCause;
 import com.liulishuo.okdownload.core.cause.ResumeFailedCause;
+import com.liulishuo.okdownload.core.listener.DownloadListener4WithSpeed;
+import com.liulishuo.okdownload.core.listener.assist.Listener4SpeedAssistExtend;
 
 import java.util.List;
 import java.util.Map;
@@ -15,33 +19,15 @@ import java.util.Map;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-public class CusDownloadListener implements DownloadListener {
-    protected long totalSize;
+public class CusDownloadListener extends DownloadListener4WithSpeed {
+
+    protected long totalLength, currentOffset;
+    protected String speed;
+
 
     @Override
     public void taskStart(@NonNull DownloadTask task) {
         Log.e("CusDownloadListener", "taskStart");
-    }
-
-    @Override
-    public void connectTrialStart(@NonNull DownloadTask task, @NonNull Map<String, List<String>> requestHeaderFields) {
-        Log.e("CusDownloadListener", "connectTrialStart");
-    }
-
-    @Override
-    public void connectTrialEnd(@NonNull DownloadTask task, int responseCode, @NonNull Map<String, List<String>> responseHeaderFields) {
-        Log.e("CusDownloadListener", "connectTrialEnd");
-    }
-
-    @Override
-    public void downloadFromBeginning(@NonNull DownloadTask task, @NonNull BreakpointInfo info, @NonNull ResumeFailedCause cause) {
-        Log.e("CusDownloadListener", "downloadFromBeginning");
-    }
-
-    @Override
-    public void downloadFromBreakpoint(@NonNull DownloadTask task, @NonNull BreakpointInfo info) {
-        Log.e("CusDownloadListener", "downloadFromBreakpoint");
-        totalSize = info.getTotalLength();
     }
 
     @Override
@@ -55,23 +41,32 @@ public class CusDownloadListener implements DownloadListener {
     }
 
     @Override
-    public void fetchStart(@NonNull DownloadTask task, int blockIndex, long contentLength) {
-        Log.e("CusDownloadListener", "fetchStart");
+    public void infoReady(@NonNull DownloadTask task, @NonNull BreakpointInfo info, boolean fromBreakpoint, @NonNull Listener4SpeedAssistExtend.Listener4SpeedModel model) {
+        Log.e("CusDownloadListener", "infoReady");
+        totalLength = info.getTotalLength();
     }
 
     @Override
-    public void fetchProgress(@NonNull DownloadTask task, int blockIndex, long increaseBytes) {
-        Log.e("CusDownloadListener", "fetchProgress");
+    public void progressBlock(@NonNull DownloadTask task, int blockIndex, long currentBlockOffset, @NonNull SpeedCalculator blockSpeed) {
+        Log.e("CusDownloadListener", "progressBlock");
     }
 
     @Override
-    public void fetchEnd(@NonNull DownloadTask task, int blockIndex, long contentLength) {
-        Log.e("CusDownloadListener", "fetchEnd");
+    public void progress(@NonNull DownloadTask task, long currentOffset, @NonNull SpeedCalculator taskSpeed) {
+        Log.e("CusDownloadListener", "progress");
+        this.currentOffset = currentOffset;
+        speed = taskSpeed.speed();
     }
 
     @Override
-    public void taskEnd(@NonNull DownloadTask task, @NonNull EndCause cause, @Nullable Exception realCause) {
-        Log.e("CusDownloadListener", "taskEnd ------ " + cause.toString() +
-                " ---- " + (realCause == null ? "" : realCause.getMessage()));
+    public void blockEnd(@NonNull DownloadTask task, int blockIndex, BlockInfo info, @NonNull SpeedCalculator blockSpeed) {
+        Log.e("CusDownloadListener", "blockEnd");
     }
+
+    @Override
+    public void taskEnd(@NonNull DownloadTask task, @NonNull EndCause cause, @Nullable Exception realCause, @NonNull SpeedCalculator taskSpeed) {
+        Log.e("CusDownloadListener", "taskEnd ------ " + (cause == null ? "cause == null" : cause.toString()) +
+                " ---- " + (realCause == null ? "realCause == null" : realCause.getMessage()));
+    }
+
 }

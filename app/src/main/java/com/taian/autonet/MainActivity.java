@@ -6,12 +6,17 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.liulishuo.okdownload.DownloadTask;
+import com.liulishuo.okdownload.SpeedCalculator;
+import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo;
 import com.liulishuo.okdownload.core.cause.EndCause;
+import com.liulishuo.okdownload.core.listener.assist.Listener4Assist;
 import com.taian.autonet.bean.ApkInfo;
 import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.DownloadDelegate;
@@ -19,6 +24,8 @@ import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.listener.CusDownloadListener;
 import com.taian.autonet.client.listener.NettyClientListener;
+import com.taian.autonet.client.listener.NormalDownloadListener;
+import com.taian.autonet.client.listener.ProgressDownloadListener;
 import com.taian.autonet.client.utils.PermissionUtils;
 import com.taian.autonet.client.utils.SpUtils;
 import com.taian.autonet.client.utils.Utils;
@@ -32,12 +39,11 @@ import java.util.List;
 
 import io.reactivex.functions.Consumer;
 import xyz.doikki.videoplayer.player.VideoView;
+import xyz.doikki.videoplayer.util.L;
 
 public class MainActivity extends BaseActivity {
 
-    private RxPermissions mRxPermission;
     private ProgressDialog mProgressDialog;
-    private Handler mHandler;
     private VideoView mVideoView;
     private StandardVideoController mController;
     private DownloadDelegate mDownloadDelegate;
@@ -47,7 +53,6 @@ public class MainActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mHandler = new Handler(getMainLooper());
         mVideoView = findViewById(R.id.player);
 
         initPermission();
@@ -80,66 +85,23 @@ public class MainActivity extends BaseActivity {
                     //播放结束
                     case VideoView.STATE_PLAYBACK_COMPLETED:
                         if (mDownloadDelegate != null) {
-                            mDownloadDelegate.updateIndex();
-                            mDownloadDelegate.startDownloadTask();
+                            BreakpointInfo breakpointInfo = mDownloadDelegate.updateIndex();
+                            if (breakpointInfo == null) realDownload();
                         }
                         break;
                     case VideoView.STATE_ERROR:
-                        new AlertDialog.Builder(MainActivity.this).
-                                setMessage(R.string.play_error).
-                                setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-//                                        if (mDownloadDelegate != null)
-//                                            mDownloadDelegate.reDownload();
-                                    }
-                                }).
-                                setNegativeButton(R.string.cancle, null).
-                                show();
+                        Toast.makeText(MainActivity.this, R.string.video_play_error, Toast.LENGTH_LONG).show();
+                        if (mDownloadDelegate != null) {
+                            String videoName = mDownloadDelegate.getCurrentVideo().getVideoName();
+                            boolean deleteFile = Utils.deleteFile(videoName);
+                            if (deleteFile) {
+                                realDownload();
+                            }
+                        }
                         break;
                 }
             }
         });
-    }
-
-    /**
-     * 初始化权限
-     */
-    private void initPermission() {
-        List<Integer> index = PermissionUtils.checkPermissions(this, PermissionUtils.permissionsREAD);
-        if (index.isEmpty()) {
-            initFolder();
-        } else {
-            mRxPermission = new RxPermissions(this);
-            mRxPermission.request(PermissionUtils.permissionsREAD)
-                    .subscribe(new Consumer<Boolean>() {
-                        @SuppressLint("CheckResult")
-                        @Override
-                        public void accept(Boolean agree) throws Exception {
-                            if (agree) {
-                                initFolder();
-                            } else {
-                                new AlertDialog.Builder(MainActivity.this).
-                                        setMessage(R.string.none_permission_warning).
-                                        setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                Utils.exitApp(MainActivity.this);
-                                            }
-                                        }).
-                                        show();
-                            }
-                        }
-                    });
-        }
-    }
-
-    private void initFolder() {
-        //初始化log文件夹
-        Utils.initFolderPath(MainActivity.this, Constants.LOG_PATH);
-        //初始化文件缓存文件夹
-        AppApplication.COMPLETE_CACHE_PATH =
-                Utils.initFolderPath(MainActivity.this, Constants.CACHE_PATH);
     }
 
 
@@ -150,46 +112,62 @@ public class MainActivity extends BaseActivity {
         List<VideoInfo> cachedVideoList = SpUtils.
                 getCachedVideoList(this, Constants.VIDEO_LIST);
         mDownloadDelegate = new DownloadDelegate(cachedVideoList);
-        mDownloadDelegate.addDownloadListener(new CusDownloadListener() {
+        realDownload();
+    }
+
+    private void realDownload() {
+        mDownloadDelegate.startDownloadTask(new CusDownloadListener() {
+
             @Override
-            public void fetchProgress(@NonNull DownloadTask task, int blockIndex, long increaseBytes) {
-                super.fetchProgress(task, blockIndex, increaseBytes);
-                float percent = (float) increaseBytes / totalSize * 100;
-                showProgressDialog(getString(R.string.system_upgrading), percent);
+            public void progress(@NonNull DownloadTask task, long currentOffset, @NonNull SpeedCalculator taskSpeed) {
+                super.progress(task, currentOffset, taskSpeed);
+                float percent = (float) currentOffset / totalLength * 100;
+                showProgressDialog(getString(R.string.video_downloading), percent, speed);
             }
 
             @Override
-            public void taskEnd(@NonNull final DownloadTask task, @NonNull EndCause cause, @Nullable Exception realCause) {
-                super.taskEnd(task, cause, realCause);
+            public void taskEnd(@NonNull final DownloadTask task, @NonNull EndCause cause,
+                                @Nullable Exception realCause, @NonNull SpeedCalculator taskSpeed) {
+                super.taskEnd(task, cause, realCause, taskSpeed);
+                if (cause == null) {
+                    downloadError(getString(R.string.unkown_error_1));
+                    return;
+                }
                 if (cause == EndCause.COMPLETED) {
-                    if (mProgressDialog != null) {
-                        mProgressDialog.dismiss();
-                        mProgressDialog = null;
-                    }
-                    String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
-                    mVideoView.release();
-                    mController.getTitleView().setTitle(task.getFilename());
-                    mVideoView.setVideoController(mController); //设置控制器
-                    mVideoView.setUrl(localPath);
-                    mVideoView.start();
+                    downloadComplete(task);
                 } else if (cause == EndCause.ERROR) {
-                    if (mProgressDialog != null) mProgressDialog.dismiss();
-                    new AlertDialog.Builder(MainActivity.this).
-                            setMessage(R.string.download_error).
-                            setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    if (mDownloadDelegate != null)
-                                        mDownloadDelegate.reDownload(task.getUrl());
-                                }
-                            }).
-                            setNegativeButton(R.string.cancle, null).
-                            show();
+                    downloadError(realCause == null ? getString(R.string.unkown_error_1) : realCause.getMessage());
                 }
             }
         });
     }
 
+    private void downloadComplete(@NonNull DownloadTask task) {
+        if (mProgressDialog != null) {
+            mProgressDialog.dismiss();
+            mProgressDialog = null;
+        }
+        String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
+        mVideoView.release();
+        mController.getTitleView().setTitle(task.getFilename());
+        mVideoView.setVideoController(mController); //设置控制器
+        mVideoView.setUrl(localPath);
+        mVideoView.start();
+    }
+
+    private void downloadError(String msg) {
+        if (mProgressDialog != null) mProgressDialog.dismiss();
+        if (Utils.checkNet(this)) {
+            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+            realDownload();
+        }
+    }
+
+    @Override
+    protected void onNetConnect() {
+        Toast.makeText(this, R.string.net_available, Toast.LENGTH_LONG).show();
+        realDownload();
+    }
 
     /**
      * 接收指令
@@ -199,7 +177,14 @@ public class MainActivity extends BaseActivity {
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage msg, int index) {
-
+//                        Log.e(MainActivity.class.getSimpleName(), msg.toString());
+                        if (msg.getDataType() == CommandDataInfo.CommandDataInfoMessage.CommandType.VoiceType) {
+                            if (mVideoView != null) {
+                                int voiceValue = msg.getVoiceCommand().getVoiceValue();
+                                float volume = (float) voiceValue / 100;
+                                mVideoView.setVolume(volume, volume);
+                            }
+                        }
                     }
 
                     @Override
@@ -210,7 +195,7 @@ public class MainActivity extends BaseActivity {
     }
 
 
-    private void showProgressDialog(String title, final float progress) {
+    private void showProgressDialog(String title, final float progress, final String speed) {
         if (mProgressDialog == null) {
             mProgressDialog = new ProgressDialog(MainActivity.this);
             mProgressDialog.setProgress(0);
@@ -218,15 +203,10 @@ public class MainActivity extends BaseActivity {
             mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
             mProgressDialog.setMax(100);
         }
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (mProgressDialog != null) {
-                    mProgressDialog.setMax(100);
-                    mProgressDialog.setProgress((int) progress);
-                }
-            }
-        }, 1000);
+        if (mProgressDialog != null) {
+            mProgressDialog.setMessage(getString(R.string.speed, speed));
+            mProgressDialog.setProgress((int) progress);
+        }
         if (!mProgressDialog.isShowing()) mProgressDialog.show();
     }
 
@@ -234,10 +214,6 @@ public class MainActivity extends BaseActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (mVideoView != null) mVideoView.release();
-        if (mHandler != null) {
-            mHandler.removeCallbacksAndMessages(null);
-            mHandler = null;
-        }
     }
 
     @Override

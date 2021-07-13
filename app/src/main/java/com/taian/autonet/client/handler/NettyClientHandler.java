@@ -4,6 +4,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 
+import com.taian.autonet.AppApplication;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.status.ConnectState;
 import com.video.netty.protobuf.CommandDataInfo;
@@ -31,7 +32,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
 
 
     public NettyClientHandler(NettyClientListener listener, int index, boolean isSendheartBeat, Object heartBeatData) {
-        this(listener,index,isSendheartBeat,heartBeatData,null);
+        this(listener, index, isSendheartBeat, heartBeatData, null);
     }
 
     public NettyClientHandler(NettyClientListener listener, int index, boolean isSendheartBeat, Object heartBeatData, String separator) {
@@ -57,7 +58,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
                 if (isSendheartBeat) {
                     ctx.channel().writeAndFlush(CommandDataInfo.CommandDataInfoMessage.newBuilder().
                             setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.HeartbeatType).
-                            setHeartbeatCommand(CommandDataInfo.HeartbeatCommand.newBuilder().setToken("abcd")));
+                            setHeartbeatCommand(CommandDataInfo.HeartbeatCommand.newBuilder().setToken(AppApplication.getMacAdress())));
                 } else {
                     Log.e(TAG, "不发送心跳");
                 }

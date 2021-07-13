@@ -2,8 +2,11 @@ package com.taian.autonet.client.utils;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
@@ -313,4 +316,96 @@ public class Utils {
             return ApkInfo.NONE_ROOT;
         }
     }
+
+    public static void reStartApp(Context context) {
+        Intent intent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        context.startActivity(intent);
+    }
+
+    /**
+     * 判断手机接入点（APN）是否处于可以使用的状态
+     *
+     * @param context
+     * @return
+     */
+    public static boolean isMobileConnection(Context context) {
+        ConnectivityManager manager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = manager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+
+        if ( networkInfo != null && networkInfo.isConnected() ) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 判断当前wifi是否是处于可以使用状态
+     *
+     * @param context
+     * @return
+     */
+    public static boolean isWIFIConnection(Context context) {
+        ConnectivityManager manager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = manager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+
+        if ( networkInfo != null && networkInfo.isConnected() ) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean checkNet(Context context) {
+        // 判断是否具有可以用于通信渠道
+        boolean mobileConnection = isMobileConnection(context);
+        boolean wifiConnection = isWIFIConnection(context);
+        if ( mobileConnection == false && wifiConnection == false ) {
+            // 没有网络
+            return false;
+        }
+        return true;
+    }
+
+    public static final int TYPE_WIFI = 1;
+    public static final int TYPE_MOBILE = 2;
+    public static final int TYPE_NOT_CONNECTED = 0;
+
+
+    public static int getConnectivityStatus(Context context) {
+        ConnectivityManager cm = (ConnectivityManager) context
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        if (null != activeNetwork) {
+            if(activeNetwork.getType() == ConnectivityManager.TYPE_WIFI)
+                return TYPE_WIFI;
+
+            if(activeNetwork.getType() == ConnectivityManager.TYPE_MOBILE)
+                return TYPE_MOBILE;
+        }
+        return TYPE_NOT_CONNECTED;
+    }
+
+    public static boolean isInteger(String value) {
+        try {
+            Integer.parseInt(value);
+            return true;
+        } catch (NumberFormatException var2) {
+            return false;
+        }
+    }
+
+    public static boolean isDouble(String value) {
+        try {
+            Double.parseDouble(value);
+            return value.contains(".");
+        } catch (NumberFormatException var2) {
+            return false;
+        }
+    }
+
+    public static boolean isNumber(String value) {
+        return isInteger(value) || isDouble(value);
+    }
+
 }

@@ -6,6 +6,7 @@ import android.os.Process;
 import android.util.Log;
 
 import com.taian.autonet.client.constant.Constants;
+import com.taian.autonet.client.utils.SpUtils;
 import com.taian.autonet.client.utils.Utils;
 
 import java.io.File;
@@ -33,6 +34,22 @@ public class AppApplication extends Application {
     public static String getMacAdress() {
         return "abcd";
 //        return Utils.getMac(globleContext);
+    }
+
+    public static String getIP() {
+        return SpUtils.getString(globleContext, Constants.IP);
+    }
+
+    public static int getPort() {
+        return SpUtils.getInt(globleContext, Constants.PORT);
+    }
+
+    public static void setIP(String IP) {
+        SpUtils.putString(globleContext, Constants.IP, IP);
+    }
+
+    public static void setPort(int port) {
+        SpUtils.putInt(globleContext, Constants.PORT, port);
     }
 
     private Thread.UncaughtExceptionHandler uncaughtExceptionHandler =
