@@ -109,6 +109,10 @@ public class SplashActivity extends BaseActivity {
                             if (packageConfigCommand.getResponseCommand().getResponseCode() == Net.SUCCESS) {
                                 isServerResponsed = true;
                                 SplashActivity.this.packageConfigCommand = packageConfigCommand;
+                                if (packageConfigCommand == null || packageConfigCommand.getProgramCommand().getVideoInfoList() == null)
+                                    WrapNettyClient.getInstance().responseServer(Net.PROGRAM_ERROR);
+                                else
+                                    WrapNettyClient.getInstance().responseServer(Net.PROGRAM_SUCCESS);
                                 if (isTimeOvered) {
                                     checkApkInfoAndSaveDataAndSkipToLogin();
                                 }
@@ -124,6 +128,25 @@ public class SplashActivity extends BaseActivity {
                                     }
                                 });
                             }
+                        } else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeType == message.getDataType()) {
+                            CommandDataInfo.BrakeCommand brakeCommand = message.getBrakeCommand();
+                            int brakeValue = brakeCommand.getBrakeValue();
+                            if (brakeValue == 0) {
+                                Intent intent = new Intent(Constants.SHUT_DOWN);
+                                sendBroadcast(intent);
+                            } else if (brakeValue == 1) {
+                                //重启
+                                Intent intent = new Intent(Constants.RE_BOOT);
+                                sendBroadcast(intent);
+                            }
+                            if (brakeValue != 0 && brakeValue != 1)
+                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_ERROR);
+                            else WrapNettyClient.getInstance().responseServer(Net.BRAKE_SUCCESS);
+                        } else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeTimingType == message.getDataType()) {
+//                            CommandDataInfo.BrakeTimingCommand brakeCommand = message.getBrakeTimingCommand();
+//                            String openBrake = brakeCommand.getOpenBrake();
+//                            String closeBrake = brakeCommand.getCloseBrake();
+//                            WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
                         }
                     }
 
@@ -152,6 +175,7 @@ public class SplashActivity extends BaseActivity {
                     }
                 });
     }
+
 
     private void checkApkInfoAndSaveDataAndSkipToLogin() {
         if (packageConfigCommand == null) {
@@ -223,7 +247,11 @@ public class SplashActivity extends BaseActivity {
                 int state = Utils.installPkg(localPath);
                 if (mProgressDialog != null) mProgressDialog.dismiss();
                 if (state != ApkInfo.INSTALLING) showErrorDialog(state);
-                else Utils.reStartApp(SplashActivity.this);
+                else {
+                    //重启机器
+                    Intent intent = new Intent(Constants.RE_BOOT);
+                    sendBroadcast(intent);
+                }
             } else if (cause == EndCause.ERROR) {
                 if (mProgressDialog != null) mProgressDialog.dismiss();
                 showErrorDialog(ApkInfo.DOWNLOAD_FAILED);
@@ -263,7 +291,7 @@ public class SplashActivity extends BaseActivity {
 
     @Override
     protected void onNetConnect() {
-        Toast.makeText(this, R.string.net_available, Toast.LENGTH_LONG).show();
+//        Toast.makeText(this, R.string.net_available, Toast.LENGTH_LONG).show();
         WrapNettyClient.getInstance().connect();
     }
 

@@ -10,4 +10,14 @@ public class Net {
     public static final int HEARTBEAT_INTERVAL = 30;
 
     public static final int SUCCESS = 200;
+
+    public static final int PROGRAM_ERROR = -101;
+    public static final int BRAKE_ERROR = -102;
+
+    public static final int PROGRAM_SUCCESS = 101;
+    public static final int BRAKE_SUCCESS = 102;
+    public static final int BRAKE_TIME_SUCCESS = 103;
+    public static final int UPDATE_VOLUME = 104;
+    public static final int UPDATE_VOLUME_ERROR = -104;
+
 }

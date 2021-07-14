@@ -4,6 +4,8 @@ import android.text.TextUtils;
 
 import com.google.protobuf.GeneratedMessageV3;
 import com.taian.autonet.AppApplication;
+import com.taian.autonet.R;
+import com.taian.autonet.SplashActivity;
 import com.taian.autonet.client.NettyTcpClient;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.net.Net;
@@ -49,9 +51,9 @@ public class WrapNettyClient {
 
         mNettyTcpClient.setListener(new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
             @Override
-            public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage msg, int index) {
+            public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
                 for (Map.Entry<String, NettyClientListener> listenerEntry : nettyClientListeners.entrySet()) {
-                    listenerEntry.getValue().onMessageResponseClient(msg, index);
+                    listenerEntry.getValue().onMessageResponseClient(message, index);
                 }
             }
 
@@ -85,5 +87,13 @@ public class WrapNettyClient {
     public void sendMsgToServer(GeneratedMessageV3 command) {
         if (mNettyTcpClient != null)
             mNettyTcpClient.sendMsgToServer(command);
+    }
+
+    //收到数据给服务器反馈
+    public void responseServer(int code) {
+        CommandDataInfo.ResponseCommand response = CommandDataInfo.ResponseCommand.newBuilder().
+                setResponseCode(code).
+                build();
+        WrapNettyClient.getInstance().sendMsgToServer(response);
     }
 }

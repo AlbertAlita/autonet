@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -26,6 +27,8 @@ import com.taian.autonet.client.listener.CusDownloadListener;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.listener.NormalDownloadListener;
 import com.taian.autonet.client.listener.ProgressDownloadListener;
+import com.taian.autonet.client.net.Net;
+import com.taian.autonet.client.status.ConnectState;
 import com.taian.autonet.client.utils.PermissionUtils;
 import com.taian.autonet.client.utils.SpUtils;
 import com.taian.autonet.client.utils.Utils;
@@ -165,7 +168,7 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void onNetConnect() {
-        Toast.makeText(this, R.string.net_available, Toast.LENGTH_LONG).show();
+//        Toast.makeText(this, R.string.net_available, Toast.LENGTH_LONG).show();
         realDownload();
     }
 
@@ -176,20 +179,50 @@ public class MainActivity extends BaseActivity {
         WrapNettyClient.getInstance().addNettyClientListener(getClass().getSimpleName(),
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
-                    public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage msg, int index) {
+                    public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
 //                        Log.e(MainActivity.class.getSimpleName(), msg.toString());
-                        if (msg.getDataType() == CommandDataInfo.CommandDataInfoMessage.CommandType.VoiceType) {
+                        if (message.getDataType() == CommandDataInfo.CommandDataInfoMessage.CommandType.VoiceType) {
+                            boolean hasError = false;
                             if (mVideoView != null) {
-                                int voiceValue = msg.getVoiceCommand().getVoiceValue();
-                                float volume = (float) voiceValue / 100;
-                                mVideoView.setVolume(volume, volume);
+                                try {
+                                    int voiceValue = message.getVoiceCommand().getVoiceValue();
+                                    Intent intent = new Intent(Constants.UPDATE_VOLUME);
+                                    intent.putExtra(Constants.VOLUME, voiceValue);  //声音值为0~100
+                                    sendBroadcast(intent);
+                                } catch (Exception e) {
+                                    hasError = true;
+                                    WrapNettyClient.getInstance().responseServer(Net.UPDATE_VOLUME_ERROR);
+                                }
+                                if (!hasError)
+                                    WrapNettyClient.getInstance().responseServer(Net.UPDATE_VOLUME);
+                            } else
+                                WrapNettyClient.getInstance().responseServer(Net.UPDATE_VOLUME_ERROR);
+                        }else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeType == message.getDataType()) {
+                            CommandDataInfo.BrakeCommand brakeCommand = message.getBrakeCommand();
+                            int brakeValue = brakeCommand.getBrakeValue();
+                            if (brakeValue == 0) {
+                                Intent intent = new Intent(Constants.SHUT_DOWN);
+                                sendBroadcast(intent);
+                            }else if (brakeValue == 1){
+                                //重启
+                                Intent intent = new Intent(Constants.RE_BOOT);
+                                sendBroadcast(intent);
                             }
+                            if (brakeValue != 0 && brakeValue != 1)
+                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_ERROR);
+                            else WrapNettyClient.getInstance().responseServer(Net.BRAKE_SUCCESS);
                         }
                     }
 
                     @Override
                     public void onClientStatusConnectChanged(int statusCode, int index) {
-
+                        if (statusCode == ConnectState.STATUS_CONNECT_CLOSED || statusCode == ConnectState.STATUS_CONNECT_ERROR)
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(MainActivity.this, R.string.net_error, Toast.LENGTH_SHORT).show();
+                                }
+                            });
                     }
                 });
     }

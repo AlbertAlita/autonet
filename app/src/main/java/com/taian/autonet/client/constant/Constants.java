@@ -18,4 +18,12 @@ public interface Constants {
     String IP = "IP";
 
     String PORT = "PORT";
+
+    String VOLUME = "volume";
+
+    String UPDATE_VOLUME = "android.intent.action.qt.updatevolume";
+
+    String SHUT_DOWN = "android.intent.action.qt.shutdown";
+
+    String RE_BOOT = "android.intent.action.qt.reboot";
 }
