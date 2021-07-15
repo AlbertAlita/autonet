@@ -11,6 +11,7 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Environment;
+import android.os.StatFs;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -408,4 +409,33 @@ public class Utils {
         return isInteger(value) || isDouble(value);
     }
 
+    public static int haveSpace(long neededSapce) {
+        long ret = readSDCard();
+        int value = 0;
+        long temp = ret / 1024 / 1024;
+        if (temp > neededSapce)
+            value = 0;
+        else if (ret == -1)
+            value = -1;
+        else
+            value = 1;
+        return value;
+    }
+
+    static public long readSDCard() {
+        String state = Environment.getExternalStorageState();
+
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            File sdcardDir = Environment.getExternalStorageDirectory();
+            StatFs sf = new StatFs(sdcardDir.getPath());
+            long blockSize = sf.getBlockSize();
+            long blockCount = sf.getBlockCount();
+            long availCount = sf.getAvailableBlocks();
+            long freespace = availCount * blockSize;// / 1024 / 1024;
+            return freespace;
+        } else {
+            return -1;
+        }
+
+    }
 }

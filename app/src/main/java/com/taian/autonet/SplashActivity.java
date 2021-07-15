@@ -261,22 +261,23 @@ public class SplashActivity extends BaseActivity {
 
 
     private void showErrorDialog(final int state) {
-        if (errorDiaolog == null)
-            errorDiaolog = new AlertDialog.Builder(this).
-                    setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            saveVideos();
-                        }
-                    }).
-                    setNegativeButton(R.string.cancle, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            Utils.exitApp(SplashActivity.this);
-                        }
-                    }).create();
-        errorDiaolog.setMessage(ApkInfo.getErrorTips(this, state));
-        errorDiaolog.show();
+//        if (errorDiaolog == null)
+//            errorDiaolog = new AlertDialog.Builder(this).
+//                    setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
+//                        @Override
+//                        public void onClick(DialogInterface dialog, int which) {
+//                            saveVideos();
+//                        }
+//                    }).
+//                    setNegativeButton(R.string.cancle, new DialogInterface.OnClickListener() {
+//                        @Override
+//                        public void onClick(DialogInterface dialog, int which) {
+//                            Utils.exitApp(SplashActivity.this);
+//                        }
+//                    }).create();
+        Toast.makeText(this, ApkInfo.getErrorTips(this, state), Toast.LENGTH_LONG).show();
+//        errorDiaolog.setMessage(ApkInfo.getErrorTips(this, state));
+//        errorDiaolog.show();
     }
 
     @Override
