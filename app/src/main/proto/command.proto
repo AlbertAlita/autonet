@@ -67,4 +67,5 @@ message PackageConfigCommand{
     required ResponseCommand responseCommand = 1;
     required ProgramCommand programCommand = 2;
     required ApkVersionCommand apkVersionCommand = 3;
+    required BrakeTimingCommand brakeTimingCommand = 4;
 }

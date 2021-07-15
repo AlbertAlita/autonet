@@ -67,7 +67,7 @@ public class WrapNettyClient {
     }
 
     public void connect() {
-        if (mNettyTcpClient != null)
+        if (mNettyTcpClient != null && !mNettyTcpClient.isConnecting())
             mNettyTcpClient.connect();
     }
 
