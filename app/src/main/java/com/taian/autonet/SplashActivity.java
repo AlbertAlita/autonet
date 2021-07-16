@@ -49,7 +49,7 @@ public class SplashActivity extends BaseActivity {
     public interface Const {
         int FOR_NEW_IP = 0x01;
         int DELAYED_OPT = 0x02;
-
+        int UPGRADE_PROGRESS = 0x03;
     }
 
     @Override
@@ -92,6 +92,9 @@ public class SplashActivity extends BaseActivity {
                             if (isServerResponsed) {
                                 checkApkInfoAndSaveDataAndSkipToLogin();
                             }
+                            break;
+                        case Const.UPGRADE_PROGRESS:
+
                             break;
                     }
                 }
@@ -214,7 +217,7 @@ public class SplashActivity extends BaseActivity {
         finish();
     }
 
-    private void showProgressDialog(String title, final float progress) {
+    private void showProgressDialog(String title, float progress, String speed) {
         if (mProgressDialog == null) {
             mProgressDialog = new ProgressDialog(this);
             mProgressDialog.setProgress(0);
@@ -222,15 +225,10 @@ public class SplashActivity extends BaseActivity {
             mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
             mProgressDialog.setMax(100);
         }
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (mProgressDialog != null) {
-                    mProgressDialog.setMax(100);
-                    mProgressDialog.setProgress((int) progress);
-                }
-            }
-        }, 1000);
+        if (mProgressDialog != null) {
+            mProgressDialog.setMessage(getString(R.string.speed, speed));
+            mProgressDialog.setProgress((int) progress);
+        }
         if (!mProgressDialog.isShowing()) mProgressDialog.show();
     }
 
@@ -240,7 +238,8 @@ public class SplashActivity extends BaseActivity {
         public void progress(@NonNull DownloadTask task, long currentOffset, @NonNull SpeedCalculator taskSpeed) {
             super.progress(task, currentOffset, taskSpeed);
             float percent = (float) currentOffset / totalLength * 100;
-            showProgressDialog(getString(R.string.system_upgrading), percent);
+            Log.e("TAG", currentOffset + "----" + totalLength);
+            showProgressDialog(getString(R.string.system_upgrading), percent, taskSpeed.speed());
         }
 
         @Override
@@ -250,9 +249,9 @@ public class SplashActivity extends BaseActivity {
             if (cause == null) return;
             if (cause == EndCause.COMPLETED) {
                 String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
-                int state = Utils.installPkg(localPath);
+                ApkInfo apkInfo = Utils.installPkg(SplashActivity.this, localPath);
                 if (mProgressDialog != null) mProgressDialog.dismiss();
-                if (state != ApkInfo.INSTALLING) showErrorDialog(state);
+                if (!apkInfo.isInstallSuccess()) showErrorDialog(apkInfo.getErrorMessage());
                 else {
                     //重启机器
                     Intent intent = new Intent(Constants.RE_BOOT);
@@ -260,30 +259,20 @@ public class SplashActivity extends BaseActivity {
                 }
             } else if (cause == EndCause.ERROR) {
                 if (mProgressDialog != null) mProgressDialog.dismiss();
-                showErrorDialog(ApkInfo.DOWNLOAD_FAILED);
+                showErrorDialog(realCause == null ?
+                        getString(R.string.upgrading_and_install_failed) : realCause.getMessage());
             }
         }
     };
 
 
-    private void showErrorDialog(final int state) {
-//        if (errorDiaolog == null)
-//            errorDiaolog = new AlertDialog.Builder(this).
-//                    setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface dialog, int which) {
-//                            saveVideos();
-//                        }
-//                    }).
-//                    setNegativeButton(R.string.cancle, new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface dialog, int which) {
-//                            Utils.exitApp(SplashActivity.this);
-//                        }
-//                    }).create();
-        Toast.makeText(this, ApkInfo.getErrorTips(this, state), Toast.LENGTH_LONG).show();
-//        errorDiaolog.setMessage(ApkInfo.getErrorTips(this, state));
-//        errorDiaolog.show();
+    private void showErrorDialog(String reason) {
+        if (errorDiaolog == null)
+            errorDiaolog = new AlertDialog.Builder(this)
+                    .create();
+//        Toast.makeText(this,reason, Toast.LENGTH_LONG).show();
+        errorDiaolog.setMessage(reason);
+        errorDiaolog.show();
     }
 
     @Override
