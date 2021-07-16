@@ -24,8 +24,8 @@ import com.taian.autonet.client.listener.CusDownloadListener;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
-import com.taian.autonet.client.utils.ActivityUtil;
 import com.taian.autonet.client.utils.CommandUtils;
+import com.taian.autonet.client.utils.ThreadPoolUtil;
 import com.taian.autonet.client.utils.Utils;
 import com.video.netty.protobuf.CommandDataInfo;
 
@@ -44,6 +44,7 @@ public class SplashActivity extends BaseActivity {
     private CommandDataInfo.PackageConfigCommand packageConfigCommand;
     private ProgressDialog mProgressDialog;
     private AlertDialog errorDiaolog;
+    private ThreadPoolUtil threadPoolUtil;
 
     public interface Const {
         int FOR_NEW_IP = 0x01;
@@ -183,12 +184,20 @@ public class SplashActivity extends BaseActivity {
         } else otherOpt();
     }
 
-    private void startDownload(String url) {
-        DownloadTask task = new DownloadTask.Builder(url,
-                AppApplication.COMPLETE_CACHE_PATH, Constants.APP_APK_NAME) //设置下载地址和下载目录，这两个是必须的参数
-                .setSyncBufferIntervalMillis(64) //写入文件的最小时间间隔，默认2000
-                .build();
-        task.enqueue(listener);
+    private void startDownload(final String url) {
+        if (threadPoolUtil == null)
+            threadPoolUtil = new ThreadPoolUtil(ThreadPoolUtil.Type.SingleThread, 1);
+        threadPoolUtil.execute(new Runnable() {
+            @Override
+            public void run() {
+                DownloadTask task = new DownloadTask.Builder(url,
+                        AppApplication.COMPLETE_CACHE_PATH, Constants.APP_APK_NAME) //设置下载地址和下载目录，这两个是必须的参数
+                        .setSyncBufferIntervalMillis(64) //写入文件的最小时间间隔，默认2000
+                        .build();
+                task.enqueue(listener);
+            }
+        });
+
     }
 
 
@@ -237,7 +246,7 @@ public class SplashActivity extends BaseActivity {
         @Override
         public void taskEnd(@NonNull final DownloadTask task, @NonNull EndCause cause,
                             @Nullable Exception realCause, @NonNull SpeedCalculator taskSpeed) {
-            super.taskEnd(task, cause, realCause);
+            super.taskEnd(task, cause, realCause, taskSpeed);
             if (cause == null) return;
             if (cause == EndCause.COMPLETED) {
                 String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
