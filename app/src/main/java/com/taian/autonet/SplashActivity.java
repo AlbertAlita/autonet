@@ -25,6 +25,7 @@ import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
 import com.taian.autonet.client.utils.ActivityUtil;
+import com.taian.autonet.client.utils.CommandUtils;
 import com.taian.autonet.client.utils.Utils;
 import com.video.netty.protobuf.CommandDataInfo;
 
@@ -131,22 +132,15 @@ public class SplashActivity extends BaseActivity {
                         } else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeType == message.getDataType()) {
                             CommandDataInfo.BrakeCommand brakeCommand = message.getBrakeCommand();
                             int brakeValue = brakeCommand.getBrakeValue();
-                            if (brakeValue == 0) {
-                                Intent intent = new Intent(Constants.SHUT_DOWN);
-                                sendBroadcast(intent);
-                            } else if (brakeValue == 1) {
-                                //重启
-                                Intent intent = new Intent(Constants.RE_BOOT);
-                                sendBroadcast(intent);
-                            }
-                            if (brakeValue != 0 && brakeValue != 1)
-                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_ERROR);
-                            else WrapNettyClient.getInstance().responseServer(Net.BRAKE_SUCCESS);
+                            CommandUtils.startOrShutDownDevice(SplashActivity.this, brakeValue);
                         } else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeTimingType == message.getDataType()) {
-//                            CommandDataInfo.BrakeTimingCommand brakeCommand = message.getBrakeTimingCommand();
-//                            String openBrake = brakeCommand.getOpenBrake();
-//                            String closeBrake = brakeCommand.getCloseBrake();
-//                            WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
+                            CommandDataInfo.BrakeTimingCommand brakeCommand = message.getBrakeTimingCommand();
+                            String openBrake = brakeCommand.getOpenBrake();
+                            String closeBrake = brakeCommand.getCloseBrake();
+                            boolean isSuccess = CommandUtils.powerOnOffByAlarm(SplashActivity.this,
+                                    openBrake, closeBrake);
+                            if (isSuccess)
+                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
                         }
                     }
 
@@ -186,7 +180,7 @@ public class SplashActivity extends BaseActivity {
         if (Utils.getAppVersionCode(this, getPackageName()) < apkVersionCommand.getVersion()) {
             String url = apkVersionCommand.getFilePath();
             startDownload(url);
-        } else saveVideos();
+        } else otherOpt();
     }
 
     private void startDownload(String url) {
@@ -198,7 +192,10 @@ public class SplashActivity extends BaseActivity {
     }
 
 
-    private void saveVideos() {
+    private void otherOpt() {
+        //设置定时开关机
+        CommandDataInfo.BrakeTimingCommand brakeTimingCommand = packageConfigCommand.getBrakeTimingCommand();
+        CommandUtils.powerOnOffByAlarm(this, brakeTimingCommand.getOpenBrake(), brakeTimingCommand.getCloseBrake());
         //获取节目单信息
         CommandDataInfo.ProgramCommand programCommand = packageConfigCommand.getProgramCommand();
         //保存节目单到本地

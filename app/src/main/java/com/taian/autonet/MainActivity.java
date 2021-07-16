@@ -29,6 +29,7 @@ import com.taian.autonet.client.listener.NormalDownloadListener;
 import com.taian.autonet.client.listener.ProgressDownloadListener;
 import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
+import com.taian.autonet.client.utils.CommandUtils;
 import com.taian.autonet.client.utils.PermissionUtils;
 import com.taian.autonet.client.utils.SpUtils;
 import com.taian.autonet.client.utils.Utils;
@@ -182,41 +183,26 @@ public class MainActivity extends BaseActivity {
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
 //                        Log.e(MainActivity.class.getSimpleName(), msg.toString());
                         if (message.getDataType() == CommandDataInfo.CommandDataInfoMessage.CommandType.VoiceType) {
-                            boolean hasError = false;
-                            if (mVideoView != null) {
-                                try {
-                                    int voiceValue = message.getVoiceCommand().getVoiceValue();
-                                    Intent intent = new Intent(Constants.UPDATE_VOLUME);
-                                    intent.putExtra(Constants.VOLUME, voiceValue);  //声音值为0~100
-                                    sendBroadcast(intent);
-                                } catch (Exception e) {
-                                    hasError = true;
-                                    WrapNettyClient.getInstance().responseServer(Net.UPDATE_VOLUME_ERROR);
-                                }
-                                if (!hasError)
-                                    WrapNettyClient.getInstance().responseServer(Net.UPDATE_VOLUME);
-                            } else
-                                WrapNettyClient.getInstance().responseServer(Net.UPDATE_VOLUME_ERROR);
-                        }else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeType == message.getDataType()) {
+                            int voiceValue = message.getVoiceCommand().getVoiceValue();
+                            CommandUtils.updateVolume(MainActivity.this, voiceValue);
+                        } else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeType == message.getDataType()) {
                             CommandDataInfo.BrakeCommand brakeCommand = message.getBrakeCommand();
                             int brakeValue = brakeCommand.getBrakeValue();
-                            if (brakeValue == 0) {
-                                Intent intent = new Intent(Constants.SHUT_DOWN);
-                                sendBroadcast(intent);
-                            }else if (brakeValue == 1){
-                                //重启
-                                Intent intent = new Intent(Constants.RE_BOOT);
-                                sendBroadcast(intent);
-                            }
-                            if (brakeValue != 0 && brakeValue != 1)
-                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_ERROR);
-                            else WrapNettyClient.getInstance().responseServer(Net.BRAKE_SUCCESS);
+                            CommandUtils.startOrShutDownDevice(MainActivity.this, brakeValue);
+                        } else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeTimingType == message.getDataType()) {
+                            CommandDataInfo.BrakeTimingCommand brakeCommand = message.getBrakeTimingCommand();
+                            String openBrake = brakeCommand.getOpenBrake();
+                            String closeBrake = brakeCommand.getCloseBrake();
+                            boolean isSuccess = CommandUtils.powerOnOffByAlarm(MainActivity.this,
+                                    openBrake, closeBrake);
+                            if (isSuccess)
+                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
                         }
                     }
 
                     @Override
                     public void onClientStatusConnectChanged(int statusCode, int index) {
-                        if (statusCode == ConnectState.STATUS_CONNECT_CLOSED || statusCode == ConnectState.STATUS_CONNECT_ERROR)
+                        if (statusCode == ConnectState.STATUS_CONNECT_ERROR)
                             MainActivity.this.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
