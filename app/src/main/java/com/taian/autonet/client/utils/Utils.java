@@ -16,6 +16,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.taian.autonet.AppApplication;
+import com.taian.autonet.R;
 import com.taian.autonet.bean.ApkInfo;
 import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.constant.Constants;
@@ -256,7 +257,8 @@ public class Utils {
     }
 
     @SuppressLint("LogUtilsNotUsed")
-    public static boolean runRootCmd(String cmd) {
+    public static ApkInfo runRootCmd(String cmd) {
+        ApkInfo apkInfo = new ApkInfo();
         boolean grandted;
         DataOutputStream outputStream = null;
         BufferedReader reader = null;
@@ -268,20 +270,19 @@ public class Utils {
             outputStream.flush();
             process.waitFor();
             reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            grandted = true;
-
+            apkInfo.setInstallSuccess(true);
             String msg = reader.readLine();
             if (msg != null) {
                 Log.e(TAG, msg);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            grandted = false;
-
+            apkInfo.setInstallSuccess(false);
+            apkInfo.setErrorMessage("错误：" + e.getMessage());
             closeIO(outputStream);
             closeIO(reader);
         }
-        return grandted;
+        return apkInfo;
     }
 
     private static void closeIO(Closeable closeable) {
@@ -309,12 +310,14 @@ public class Utils {
         return isRoot;
     }
 
-    public static int installPkg(String apkPath) {
+    public static ApkInfo installPkg(Context context,String apkPath) {
         if (checkRoot()) {
-            int state = runRootCmd("pm install -i 包名 --user 0 " + apkPath) ? ApkInfo.INSTALLING : ApkInfo.INSTALL_FAILED;
-            return state;
+            ApkInfo apkInfo = runRootCmd("pm install -i 包名 --user 0 " + apkPath);
+            return apkInfo;
         } else {
-            return ApkInfo.NONE_ROOT;
+            ApkInfo apkInfo = new ApkInfo();
+            apkInfo.setErrorMessage(context.getString(R.string.none_root));
+            return apkInfo;
         }
     }
 
@@ -334,7 +337,7 @@ public class Utils {
         ConnectivityManager manager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = manager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
 
-        if ( networkInfo != null && networkInfo.isConnected() ) {
+        if (networkInfo != null && networkInfo.isConnected()) {
             return true;
         }
         return false;
@@ -350,7 +353,7 @@ public class Utils {
         ConnectivityManager manager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = manager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
 
-        if ( networkInfo != null && networkInfo.isConnected() ) {
+        if (networkInfo != null && networkInfo.isConnected()) {
             return true;
         }
         return false;
@@ -360,7 +363,7 @@ public class Utils {
         // 判断是否具有可以用于通信渠道
         boolean mobileConnection = isMobileConnection(context);
         boolean wifiConnection = isWIFIConnection(context);
-        if ( mobileConnection == false && wifiConnection == false ) {
+        if (mobileConnection == false && wifiConnection == false) {
             // 没有网络
             return false;
         }
@@ -378,10 +381,10 @@ public class Utils {
 
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
         if (null != activeNetwork) {
-            if(activeNetwork.getType() == ConnectivityManager.TYPE_WIFI)
+            if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI)
                 return TYPE_WIFI;
 
-            if(activeNetwork.getType() == ConnectivityManager.TYPE_MOBILE)
+            if (activeNetwork.getType() == ConnectivityManager.TYPE_MOBILE)
                 return TYPE_MOBILE;
         }
         return TYPE_NOT_CONNECTED;

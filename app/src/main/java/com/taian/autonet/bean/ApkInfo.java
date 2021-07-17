@@ -7,6 +7,25 @@ import com.taian.autonet.R;
 
 public class ApkInfo {
 
+    private boolean isInstallSuccess;
+    private String errorMessage;
+
+    public boolean isInstallSuccess() {
+        return isInstallSuccess;
+    }
+
+    public void setInstallSuccess(boolean installSuccess) {
+        isInstallSuccess = installSuccess;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+
     public static final int NONE_ROOT = 0x01, INSTALL_FAILED = 0x02, INSTALLING = 0x03, DOWNLOAD_FAILED = 0x04;
 
     public static String getErrorTips(Context context, int state) {

@@ -26,4 +26,10 @@ public interface Constants {
     String SHUT_DOWN = "android.intent.action.qt.shutdown";
 
     String RE_BOOT = "android.intent.action.qt.reboot";
+
+    String POWER_ON_OFF_BY_ALARM = "android.intent.action.setpoweronoff";
+
+    String TIME_ON = "timeon";
+
+    String TIME_OFF = "timeoff";
 }
