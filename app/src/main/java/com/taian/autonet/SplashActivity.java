@@ -2,7 +2,6 @@ package com.taian.autonet;
 
 
 import android.app.ProgressDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -13,11 +12,11 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.liulishuo.okdownload.DownloadListener;
 import com.liulishuo.okdownload.DownloadTask;
 import com.liulishuo.okdownload.SpeedCalculator;
+import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo;
 import com.liulishuo.okdownload.core.cause.EndCause;
-import com.taian.autonet.bean.ApkInfo;
+import com.liulishuo.okdownload.core.listener.assist.Listener4SpeedAssistExtend;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.listener.CusDownloadListener;
@@ -26,15 +25,15 @@ import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
 import com.taian.autonet.client.utils.CommandUtils;
 import com.taian.autonet.client.utils.ThreadPoolUtil;
+import com.taian.autonet.client.utils.Util_System_Package;
 import com.taian.autonet.client.utils.Utils;
 import com.video.netty.protobuf.CommandDataInfo;
 
 import java.io.File;
-import java.util.concurrent.Delayed;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.annotations.Nullable;
 
 
 public class SplashActivity extends BaseActivity {
@@ -45,6 +44,7 @@ public class SplashActivity extends BaseActivity {
     private ProgressDialog mProgressDialog;
     private AlertDialog errorDiaolog;
     private ThreadPoolUtil threadPoolUtil;
+    private DownloadTask task;
 
     public interface Const {
         int FOR_NEW_IP = 0x01;
@@ -193,10 +193,11 @@ public class SplashActivity extends BaseActivity {
         threadPoolUtil.execute(new Runnable() {
             @Override
             public void run() {
-                DownloadTask task = new DownloadTask.Builder(url,
-                        AppApplication.COMPLETE_CACHE_PATH, Constants.APP_APK_NAME) //设置下载地址和下载目录，这两个是必须的参数
-                        .setSyncBufferIntervalMillis(64) //写入文件的最小时间间隔，默认2000
-                        .build();
+                if (task == null)
+                    task = new DownloadTask.Builder(url,
+                            AppApplication.COMPLETE_CACHE_PATH, Constants.APP_APK_NAME) //设置下载地址和下载目录，这两个是必须的参数
+                            .setSyncBufferIntervalMillis(64) //写入文件的最小时间间隔，默认2000
+                            .build();
                 task.enqueue(listener);
             }
         });
@@ -235,6 +236,32 @@ public class SplashActivity extends BaseActivity {
     CusDownloadListener listener = new CusDownloadListener() {
 
         @Override
+        public void infoReady(final DownloadTask task, BreakpointInfo info, boolean fromBreakpoint, Listener4SpeedAssistExtend.Listener4SpeedModel model) {
+            super.infoReady(task, info, fromBreakpoint, model);
+            int haveSpace = Utils.haveSpace(totalLength);
+            if (haveSpace == -1) {
+                boolean deleteDirectory = Utils.deleteDirectory(AppApplication.COMPLETE_CACHE_PATH);
+                Utils.deleteDirectory(AppApplication.COMPLETE_LOG_PATH);
+                task.cancel();
+                if (deleteDirectory) {
+                    haveSpace = Utils.haveSpace(totalLength);
+                    if (haveSpace == -1)
+                        showErrorDialog(getString(R.string.insufficient_disk_space));
+                    else {
+                        threadPoolUtil.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                task.execute(listener);
+                            }
+                        });
+                    }
+                } else {
+                    showErrorDialog(getString(R.string.insufficient_disk_space));
+                }
+            }
+        }
+
+        @Override
         public void progress(@NonNull DownloadTask task, long currentOffset, @NonNull SpeedCalculator taskSpeed) {
             super.progress(task, currentOffset, taskSpeed);
             float percent = (float) currentOffset / totalLength * 100;
@@ -249,9 +276,9 @@ public class SplashActivity extends BaseActivity {
             if (cause == null) return;
             if (cause == EndCause.COMPLETED) {
                 String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
-                ApkInfo apkInfo = Utils.installPkg(SplashActivity.this, localPath);
+                boolean isInstallSuccess = Util_System_Package.installSlient(SplashActivity.this, localPath);
                 if (mProgressDialog != null) mProgressDialog.dismiss();
-                if (!apkInfo.isInstallSuccess()) showErrorDialog(apkInfo.getErrorMessage());
+                if (!isInstallSuccess) showErrorDialog(getString(R.string.apk_install_error));
                 else {
                     //重启机器
                     Intent intent = new Intent(Constants.RE_BOOT);
@@ -270,7 +297,6 @@ public class SplashActivity extends BaseActivity {
         if (errorDiaolog == null)
             errorDiaolog = new AlertDialog.Builder(this)
                     .create();
-//        Toast.makeText(this,reason, Toast.LENGTH_LONG).show();
         errorDiaolog.setMessage(reason);
         errorDiaolog.show();
     }

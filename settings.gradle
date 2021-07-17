@@ -1,2 +1,2 @@
 rootProject.name='autonet'
-include ':app', ':im_lib'
+include ':app'

@@ -10,8 +10,9 @@ import com.liulishuo.okdownload.core.cause.ResumeFailedCause;
 import java.util.List;
 import java.util.Map;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.annotations.Nullable;
+
 
 public class NormalDownloadListener implements DownloadListener {
     @Override

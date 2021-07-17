@@ -11,7 +11,8 @@ import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.utils.Utils;
 
-import androidx.annotation.Nullable;
+import io.reactivex.annotations.Nullable;
+
 
 public class SettingActivity extends BaseActivity {
 

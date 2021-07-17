@@ -11,6 +11,7 @@ import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.utils.ThreadPoolUtil;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,10 @@ public class DownloadDelegate {
 
     public DownloadDelegate(List<VideoInfo> cachedVideoList) {
         this.cachedVideoList = cachedVideoList;
+    }
+
+    public List<VideoInfo> getCachedVideoList() {
+        return cachedVideoList == null ? new ArrayList<VideoInfo>() : cachedVideoList;
     }
 
     public void startDownloadTask(final DownloadListener listener) {

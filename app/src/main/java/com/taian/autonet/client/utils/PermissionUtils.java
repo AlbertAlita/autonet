@@ -1,13 +1,15 @@
 package com.taian.autonet.client.utils;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 
-import androidx.core.app.ActivityCompat;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.core.app.ActivityCompat;
 
 public class PermissionUtils {
 

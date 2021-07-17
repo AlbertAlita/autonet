@@ -1,11 +1,10 @@
 package com.taian.autonet;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
+import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -17,11 +16,11 @@ import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.util.List;
 
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
+import io.reactivex.annotations.Nullable;
 import io.reactivex.functions.Consumer;
 
-public class BaseActivity extends AppCompatActivity implements NetworkChangeReceiver.NetStateChangeObserver {
+public class BaseActivity extends Activity implements NetworkChangeReceiver.NetStateChangeObserver {
 
     protected RxPermissions mRxPermission;
 
@@ -59,12 +58,6 @@ public class BaseActivity extends AppCompatActivity implements NetworkChangeRece
                             } else {
                                 new AlertDialog.Builder(BaseActivity.this).
                                         setMessage(R.string.none_permission_warning).
-                                        setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                Utils.exitApp(BaseActivity.this);
-                                            }
-                                        }).
                                         show();
                             }
                         }
@@ -74,7 +67,7 @@ public class BaseActivity extends AppCompatActivity implements NetworkChangeRece
 
     private void initFolder() {
         //初始化log文件夹
-        Utils.initFolderPath(this, Constants.LOG_PATH);
+        AppApplication.COMPLETE_LOG_PATH = Utils.initFolderPath(this, Constants.LOG_PATH);
         //初始化文件缓存文件夹
         AppApplication.COMPLETE_CACHE_PATH =
                 Utils.initFolderPath(this, Constants.CACHE_PATH);

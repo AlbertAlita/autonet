@@ -10,8 +10,9 @@ import com.liulishuo.okdownload.core.listener.assist.Listener4Assist;
 import java.util.List;
 import java.util.Map;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.annotations.Nullable;
+
 
 public class ProgressDownloadListener extends DownloadListener4 {
     @Override

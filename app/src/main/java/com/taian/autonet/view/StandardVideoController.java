@@ -10,12 +10,11 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import androidx.annotation.AttrRes;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.taian.autonet.R;
 
+import io.reactivex.annotations.NonNull;
+import io.reactivex.annotations.Nullable;
 import xyz.doikki.videoplayer.controller.GestureVideoController;
 import xyz.doikki.videoplayer.player.VideoView;
 import xyz.doikki.videoplayer.util.PlayerUtils;
@@ -41,7 +40,7 @@ public class StandardVideoController extends GestureVideoController implements V
         this(context, attrs, 0);
     }
 
-    public StandardVideoController(@NonNull Context context, @Nullable AttributeSet attrs, @AttrRes int defStyleAttr) {
+    public StandardVideoController(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
     }
 

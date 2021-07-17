@@ -259,7 +259,6 @@ public class Utils {
     @SuppressLint("LogUtilsNotUsed")
     public static ApkInfo runRootCmd(String cmd) {
         ApkInfo apkInfo = new ApkInfo();
-        boolean grandted;
         DataOutputStream outputStream = null;
         BufferedReader reader = null;
         try {
@@ -273,9 +272,12 @@ public class Utils {
             apkInfo.setInstallSuccess(true);
             String msg = reader.readLine();
             if (msg != null) {
+                apkInfo.setInstallSuccess(false);
+                apkInfo.setErrorMessage("错误：" + msg);
                 Log.e(TAG, msg);
             }
         } catch (Exception e) {
+            Log.e("安装错误", "错误" + e.getMessage());
             e.printStackTrace();
             apkInfo.setInstallSuccess(false);
             apkInfo.setErrorMessage("错误：" + e.getMessage());
@@ -310,7 +312,7 @@ public class Utils {
         return isRoot;
     }
 
-    public static ApkInfo installPkg(Context context,String apkPath) {
+    public static ApkInfo installPkg(Context context, String apkPath) {
         if (checkRoot()) {
             ApkInfo apkInfo = runRootCmd("pm install -i 包名 --user 0 " + apkPath);
             return apkInfo;
@@ -320,6 +322,7 @@ public class Utils {
             return apkInfo;
         }
     }
+
 
     public static void reStartApp(Context context) {
         Intent intent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
@@ -415,8 +418,8 @@ public class Utils {
     public static int haveSpace(long neededSapce) {
         long ret = readSDCard();
         int value = 0;
-        long temp = ret / 1024 / 1024;
-        if (temp > neededSapce)
+//        long temp = ret / 1024 / 1024;
+        if (ret > neededSapce)
             value = 0;
         else if (ret == -1)
             value = -1;
@@ -439,6 +442,196 @@ public class Utils {
         } else {
             return -1;
         }
+    }
 
+    public static boolean DeleteFolder(String filePath) {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            return false;
+        } else {
+            if (file.isFile()) {
+                // 为文件时调用删除文件方法
+                return deleteFile2(filePath);
+            } else {
+                // 为目录时调用删除目录方法
+                return deleteDirectory(filePath);
+            }
+        }
+    }
+
+    /**
+     * 删除单个文件
+     *
+     * @param filePath 被删除文件的文件名
+     * @return 文件删除成功返回true，否则返回false
+     */
+    public static boolean deleteFile2(String filePath) {
+        File file = new File(filePath);
+        if (file.isFile() && file.exists()) {
+            return file.delete();
+        }
+        return false;
+    }
+
+    /**
+     * 删除文件夹以及目录下的文件
+     *
+     * @param filePath 被删除目录的文件路径
+     * @return 目录删除成功返回true，否则返回false
+     */
+    public static boolean deleteDirectory(String filePath) {
+        boolean flag = false;
+        //如果filePath不以文件分隔符结尾，自动添加文件分隔符
+        if (!filePath.endsWith(File.separator)) {
+            filePath = filePath + File.separator;
+        }
+        File dirFile = new File(filePath);
+        if (!dirFile.exists() || !dirFile.isDirectory()) {
+            return false;
+        }
+        flag = true;
+        File[] files = dirFile.listFiles();
+        //遍历删除文件夹下的所有文件(包括子目录)
+        for (int i = 0; i < files.length; i++) {
+            if (files[i].isFile()) {
+                //删除子文件
+                flag = deleteFile(files[i].getAbsolutePath());
+                if (!flag) break;
+            } else {
+                //删除子目录
+                flag = deleteDirectory(files[i].getAbsolutePath());
+                if (!flag) break;
+            }
+        }
+        if (!flag) return false;
+        //删除当前空目录
+        return dirFile.delete();
+    }
+
+    /**
+     * @param filePath    要删除的文件夹目录及子文件
+     * @param excludeFile 指定的不删除的文件
+     * @return
+     */
+    public static boolean deleteDirectory(String filePath, List<String> excludeFile) {
+        boolean flag = false;
+        //如果filePath不以文件分隔符结尾，自动添加文件分隔符
+        if (!filePath.endsWith(File.separator)) {
+            filePath = filePath + File.separator;
+        }
+        File dirFile = new File(filePath);
+        if (!dirFile.exists() || !dirFile.isDirectory()) {
+            return false;
+        }
+        flag = true;
+        File[] files = dirFile.listFiles();
+        //遍历删除文件夹下的所有文件(包括子目录)
+        for (int i = 0; i < files.length; i++) {
+            if (excludeFile.contains(files[i])) continue;
+            if (files[i].isFile()) {
+                //删除子文件
+                flag = deleteFile(files[i].getAbsolutePath());
+                if (!flag) break;
+            } else {
+                //删除子目录
+                flag = deleteDirectory(files[i].getAbsolutePath());
+                if (!flag) break;
+            }
+        }
+        if (!flag) return false;
+        //删除当前空目录,如果有指定不删除的文件，那么就保留这个文件夹
+        if (excludeFile.isEmpty())
+            return dirFile.delete();
+        else return true;
+    }
+
+    public static String installSlient(String filePath) {
+        String cmd = "pm install -r/" +filePath ;
+
+        Process process = null;
+
+        DataOutputStream os = null;
+
+        BufferedReader successResult = null;
+
+        BufferedReader errorResult = null;
+
+        StringBuilder successMsg = null;
+
+        StringBuilder errorMsg = null;
+
+        try {
+            //静默安装需要root权限
+
+            process = Runtime.getRuntime().exec("su");
+
+            os = new DataOutputStream(process.getOutputStream());
+
+            os.write(cmd.getBytes());
+
+            os.writeBytes("\n");
+
+            os.writeBytes("exit\n");
+
+            os.flush();
+
+            //执行命令
+
+            process.waitFor();
+
+            //获取返回结果
+
+            successMsg = new StringBuilder();
+
+            errorMsg = new StringBuilder();
+
+            successResult = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+            errorResult = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+            String s;
+
+            while ((s =successResult.readLine()) != null) {
+                successMsg.append(s);
+
+            }
+
+            while ((s = errorResult.readLine())!= null) {
+                errorMsg.append(s);
+
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+        } finally {
+            try {
+                if (os != null) {
+                    os.close();
+
+                }
+
+                if (process != null) {
+                    process.destroy();
+
+                }
+
+                if (successResult != null) {
+                    successResult.close();
+
+                }
+
+                if (errorResult != null) {
+                    errorResult.close();
+
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+
+            }
+
+        }
+        return errorMsg.toString();
     }
 }

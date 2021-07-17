@@ -1,49 +1,38 @@
 package com.taian.autonet;
 
-import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.util.Log;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.liulishuo.okdownload.DownloadTask;
 import com.liulishuo.okdownload.SpeedCalculator;
 import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo;
 import com.liulishuo.okdownload.core.cause.EndCause;
-import com.liulishuo.okdownload.core.listener.assist.Listener4Assist;
-import com.taian.autonet.bean.ApkInfo;
+import com.liulishuo.okdownload.core.listener.assist.Listener4SpeedAssistExtend;
 import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.DownloadDelegate;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.listener.CusDownloadListener;
 import com.taian.autonet.client.listener.NettyClientListener;
-import com.taian.autonet.client.listener.NormalDownloadListener;
-import com.taian.autonet.client.listener.ProgressDownloadListener;
 import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
 import com.taian.autonet.client.utils.CommandUtils;
-import com.taian.autonet.client.utils.PermissionUtils;
 import com.taian.autonet.client.utils.SpUtils;
 import com.taian.autonet.client.utils.Utils;
 import com.taian.autonet.view.StandardVideoController;
-import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.video.netty.protobuf.CommandDataInfo;
 
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
-import io.reactivex.functions.Consumer;
+import androidx.appcompat.app.AlertDialog;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.annotations.Nullable;
 import xyz.doikki.videoplayer.player.VideoView;
-import xyz.doikki.videoplayer.util.L;
 
 public class MainActivity extends BaseActivity {
 
@@ -51,6 +40,7 @@ public class MainActivity extends BaseActivity {
     private VideoView mVideoView;
     private StandardVideoController mController;
     private DownloadDelegate mDownloadDelegate;
+    private AlertDialog errorDiaolog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,6 +113,32 @@ public class MainActivity extends BaseActivity {
         mDownloadDelegate.startDownloadTask(new CusDownloadListener() {
 
             @Override
+            public void infoReady(final DownloadTask task, BreakpointInfo info, boolean fromBreakpoint, Listener4SpeedAssistExtend.Listener4SpeedModel model) {
+                super.infoReady(task, info, fromBreakpoint, model);
+                int haveSpace = Utils.haveSpace(totalLength);
+                if (haveSpace == -1) {
+                    List<VideoInfo> cachedVideoList = mDownloadDelegate.getCachedVideoList();
+                    List<String> list = new ArrayList<>();
+                    for (VideoInfo videoInfo : cachedVideoList) {
+                        list.add(AppApplication.COMPLETE_CACHE_PATH + File.separator + videoInfo.getVideoName());
+                    }
+                    boolean deleteDirectory = Utils.deleteDirectory(AppApplication.COMPLETE_CACHE_PATH, list);
+                    Utils.deleteDirectory(AppApplication.COMPLETE_LOG_PATH);
+                    task.cancel();
+                    if (deleteDirectory) {
+                        haveSpace = Utils.haveSpace(totalLength);
+                        if (haveSpace == -1)
+                            showErrorDialog(getString(R.string.insufficient_disk_space));
+                        else {
+                            realDownload();
+                        }
+                    } else {
+                        showErrorDialog(getString(R.string.insufficient_disk_space));
+                    }
+                }
+            }
+
+            @Override
             public void progress(@NonNull DownloadTask task, long currentOffset, @NonNull SpeedCalculator taskSpeed) {
                 super.progress(task, currentOffset, taskSpeed);
                 float percent = (float) currentOffset / totalLength * 100;
@@ -165,6 +181,14 @@ public class MainActivity extends BaseActivity {
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
             realDownload();
         }
+    }
+
+    private void showErrorDialog(String reason) {
+        if (errorDiaolog == null)
+            errorDiaolog = new AlertDialog.Builder(this)
+                    .create();
+        errorDiaolog.setMessage(reason);
+        errorDiaolog.show();
     }
 
     @Override

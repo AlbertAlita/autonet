@@ -23,6 +23,7 @@ public class AppApplication extends Application {
 
     public static AppApplication globleContext;
     public static String COMPLETE_CACHE_PATH;
+    public static String COMPLETE_LOG_PATH;
 
     @Override
     public void onCreate() {
