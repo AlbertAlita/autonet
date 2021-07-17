@@ -244,6 +244,7 @@ public class SplashActivity extends BaseActivity {
         public void progress(@NonNull DownloadTask task, long currentOffset, @NonNull SpeedCalculator taskSpeed) {
             super.progress(task, currentOffset, taskSpeed);
             float percent = (float) currentOffset / totalLength * 100;
+            Log.e("TAG", currentOffset + " --------- " + totalLength);
             showProgressDialog(getString(R.string.system_upgrading), percent);
         }
 
