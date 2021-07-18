@@ -11,12 +11,16 @@ android {
 
     defaultConfig {
         applicationId "com.taian.autonet"
-        minSdkVersion 24
+        minSdkVersion 23
         targetSdkVersion 29
         versionCode 1
         versionName "1.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters "armeabi", "armeabi-v7a", "x86", "mips"
+        }
     }
 
     buildTypes {
@@ -26,22 +30,6 @@ android {
         }
     }
 
-    signingConfigs {
-        debug {
-            storeFile file(KEY_STORE_FILE)
-            storePassword KEY_STORE_PASSWORD
-            keyAlias KEY_ALIAS
-            keyPassword KEY_PASSWORD
-            v2SigningEnabled false
-        }
-        release {
-            storeFile file(KEY_STORE_FILE)
-            storePassword KEY_STORE_PASSWORD
-            keyAlias KEY_ALIAS
-            keyPassword KEY_PASSWORD
-            v2SigningEnabled false
-        }
-    }
     sourceSets {
         main {
             java {
@@ -53,6 +41,8 @@ android {
             }
         }
     }
+
+
 }
 
 protobuf {
@@ -98,4 +88,5 @@ dependencies {
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.5@aar'
     implementation 'xyz.doikki.android.dkplayer:dkplayer-java:3.3.3'
     implementation files('libs/netty-tcp-4.1.33-1.0.jar')
+    implementation project(':installerlibrary')
 }
