@@ -215,12 +215,12 @@ public class MainActivity extends BaseActivity {
                             CommandUtils.startOrShutDownDevice(MainActivity.this, brakeValue);
                         } else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeTimingType == message.getDataType()) {
                             CommandDataInfo.BrakeTimingCommand brakeCommand = message.getBrakeTimingCommand();
-                            String openBrake = brakeCommand.getOpenBrake();
-                            String closeBrake = brakeCommand.getCloseBrake();
-                            boolean isSuccess = CommandUtils.powerOnOffByAlarm(MainActivity.this,
-                                    openBrake, closeBrake);
-                            if (isSuccess)
-                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
+//                            String openBrake = brakeCommand.getOpenBrake();
+//                            String closeBrake = brakeCommand.getCloseBrake();
+//                            boolean isSuccess = CommandUtils.powerOnOffByAlarm(MainActivity.this,
+//                                    openBrake, closeBrake);
+//                            if (isSuccess)
+//                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
                         }
                     }
 

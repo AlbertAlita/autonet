@@ -35,8 +35,10 @@ message BrakeCommand{
     required int32 brakeValue = 1; //开机=1  关机=0
 }
 message BrakeTimingCommand{
-    required string openBrake = 1;  //定时开机时间
-    required string closeBrake = 2;  //定时关机时间
+    required string amOpenBrake = 1;  //上午定时开机时间
+    required string amCloseBrake = 2;  //上午定时关机时间
+    required string pmOpenBrake = 3;  //下午定时开机时间
+    required string pmCloseBrake = 4;  //下午定时关机时间
 }
 message ApkVersionCommand{
     required int32 version = 1; //APK版本号
