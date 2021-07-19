@@ -306,6 +306,10 @@ public class NettyTcpClient {
         return flag;
     }
 
+    public void resetReconnectNum(){
+        reconnectNum = MAX_CONNECT_TIMES;
+    }
+
     /**
      * 获取TCP连接状态
      *

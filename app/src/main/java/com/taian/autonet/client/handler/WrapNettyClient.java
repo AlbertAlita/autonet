@@ -76,6 +76,14 @@ public class WrapNettyClient {
             mNettyTcpClient.disconnect();
     }
 
+    public void reConnect() {
+        if (mNettyTcpClient != null) {
+            mNettyTcpClient.resetReconnectNum();
+            mNettyTcpClient.reconnect();
+        }
+    }
+
+
     public void addNettyClientListener(String tag, NettyClientListener listener) {
         nettyClientListeners.put(tag, listener);
     }

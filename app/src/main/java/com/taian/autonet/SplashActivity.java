@@ -348,7 +348,7 @@ public class SplashActivity extends BaseActivity {
         super.onDestroy();
         if (errorDiaolog != null) errorDiaolog.dismiss();
         WrapNettyClient.getInstance().removeListener(SplashActivity.class.getSimpleName());
-        WrapNettyClient.getInstance().disConnect();
+//        WrapNettyClient.getInstance().disConnect();
         if (mHandler != null) {
             mHandler.removeCallbacksAndMessages(null);
             mHandler = null;

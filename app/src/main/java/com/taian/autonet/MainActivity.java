@@ -206,6 +206,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
 //                        Log.e(MainActivity.class.getSimpleName(), msg.toString());
+                        showErrorDialog(message.toString());
                         if (message.getDataType() == CommandDataInfo.CommandDataInfoMessage.CommandType.VoiceType) {
                             int voiceValue = message.getVoiceCommand().getVoiceValue();
                             CommandUtils.updateVolume(MainActivity.this, voiceValue);

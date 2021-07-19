@@ -59,6 +59,7 @@ public class CommandUtils {
             intent.putExtra(Constants.VOLUME, voiceValue);  //声音值为0~100
             context.sendBroadcast(intent);
         } catch (Exception e) {
+            hasError = true;
             WrapNettyClient.getInstance().responseServer(Net.UPDATE_VOLUME_ERROR);
         }
         if (!hasError)
