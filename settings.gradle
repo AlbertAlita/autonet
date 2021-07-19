@@ -1,2 +1,3 @@
 rootProject.name='autonet'
 include ':app'
+include ':installerlibrary'

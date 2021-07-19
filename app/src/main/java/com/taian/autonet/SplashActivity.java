@@ -2,6 +2,7 @@ package com.taian.autonet;
 
 
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -25,15 +26,16 @@ import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
 import com.taian.autonet.client.utils.CommandUtils;
 import com.taian.autonet.client.utils.ThreadPoolUtil;
-import com.taian.autonet.client.utils.Util_System_Package;
 import com.taian.autonet.client.utils.Utils;
 import com.video.netty.protobuf.CommandDataInfo;
 
 import java.io.File;
 
 import androidx.appcompat.app.AlertDialog;
+
 import io.reactivex.annotations.NonNull;
 import io.reactivex.annotations.Nullable;
+import top.wuhaojie.installerlibrary.AutoInstaller;
 
 
 public class SplashActivity extends BaseActivity {
@@ -108,7 +110,7 @@ public class SplashActivity extends BaseActivity {
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
-                        Log.e("TAG", message.toString());
+//                        Log.e("TAG", message.toString());
                         if (CommandDataInfo.CommandDataInfoMessage.CommandType.PackageConfigType == message.getDataType()) {
                             CommandDataInfo.PackageConfigCommand packageConfigCommand = message.getPackageConfigCommand();
                             if (packageConfigCommand.getResponseCommand().getResponseCode() == Net.SUCCESS) {
@@ -221,12 +223,15 @@ public class SplashActivity extends BaseActivity {
     private void showProgressDialog(String title, float progress, String speed) {
         if (mProgressDialog == null) {
             mProgressDialog = new ProgressDialog(this);
-            mProgressDialog.setProgress(0);
+            if (progress != -1) {
+                mProgressDialog.setProgress(0);
+                mProgressDialog.setMax(100);
+                mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            }
+
             mProgressDialog.setTitle(title);
-            mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            mProgressDialog.setMax(100);
         }
-        if (mProgressDialog != null) {
+        if (mProgressDialog != null && progress != -1) {
             mProgressDialog.setMessage(getString(R.string.speed, speed));
             mProgressDialog.setProgress((int) progress);
         }
@@ -265,7 +270,7 @@ public class SplashActivity extends BaseActivity {
         public void progress(@NonNull DownloadTask task, long currentOffset, @NonNull SpeedCalculator taskSpeed) {
             super.progress(task, currentOffset, taskSpeed);
             float percent = (float) currentOffset / totalLength * 100;
-            Log.e("TAG", currentOffset + "----" + totalLength);
+//            Log.e("TAG", currentOffset + "----" + totalLength);
             showProgressDialog(getString(R.string.system_upgrading), percent, taskSpeed.speed());
         }
 
@@ -275,15 +280,33 @@ public class SplashActivity extends BaseActivity {
             super.taskEnd(task, cause, realCause, taskSpeed);
             if (cause == null) return;
             if (cause == EndCause.COMPLETED) {
-                String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
-                boolean isInstallSuccess = Util_System_Package.installSlient(SplashActivity.this, localPath);
                 if (mProgressDialog != null) mProgressDialog.dismiss();
-                if (!isInstallSuccess) showErrorDialog(getString(R.string.apk_install_error));
-                else {
-                    //重启机器
-                    Intent intent = new Intent(Constants.RE_BOOT);
-                    sendBroadcast(intent);
-                }
+                String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
+                AutoInstaller installer = AutoInstaller.getDefault(SplashActivity.this);
+                installer.install(localPath);
+                installer.setOnStateChangedListener(new AutoInstaller.OnStateChangedListener() {
+                    @Override
+                    public void onStart() {
+                        showProgressDialog(getString(R.string.system_upgrading), -1, null);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        if (mProgressDialog != null) mProgressDialog.dismiss();
+                        Intent intent = new Intent(Constants.RE_BOOT);
+                        sendBroadcast(intent);
+                    }
+
+                    @Override
+                    public void onNeed2OpenService() {
+                        Toast.makeText(SplashActivity.this, "请打开辅助功能服务", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void needPermission() {
+                        Toast.makeText(SplashActivity.this, "需要申请存储空间权限", Toast.LENGTH_SHORT).show();
+                    }
+                });
             } else if (cause == EndCause.ERROR) {
                 if (mProgressDialog != null) mProgressDialog.dismiss();
                 showErrorDialog(realCause == null ?
@@ -294,9 +317,16 @@ public class SplashActivity extends BaseActivity {
 
 
     private void showErrorDialog(String reason) {
-        if (errorDiaolog == null)
+        if (errorDiaolog == null) {
             errorDiaolog = new AlertDialog.Builder(this)
                     .create();
+            errorDiaolog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    otherOpt();
+                }
+            });
+        }
         errorDiaolog.setMessage(reason);
         errorDiaolog.show();
     }

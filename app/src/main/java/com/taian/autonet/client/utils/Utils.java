@@ -256,73 +256,6 @@ public class Utils {
         SpUtils.putString(context, Constants.VIDEO_LIST, GsonUtil.toJson(videoInfos));
     }
 
-    @SuppressLint("LogUtilsNotUsed")
-    public static ApkInfo runRootCmd(String cmd) {
-        ApkInfo apkInfo = new ApkInfo();
-        DataOutputStream outputStream = null;
-        BufferedReader reader = null;
-        try {
-            Process process = Runtime.getRuntime().exec("su");
-            outputStream = new DataOutputStream(process.getOutputStream());
-            outputStream.writeBytes(cmd + "\n");
-            outputStream.writeBytes("exit\n");
-            outputStream.flush();
-            process.waitFor();
-            reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            apkInfo.setInstallSuccess(true);
-            String msg = reader.readLine();
-            if (msg != null) {
-                apkInfo.setInstallSuccess(false);
-                apkInfo.setErrorMessage("错误：" + msg);
-                Log.e(TAG, msg);
-            }
-        } catch (Exception e) {
-            Log.e("安装错误", "错误" + e.getMessage());
-            e.printStackTrace();
-            apkInfo.setInstallSuccess(false);
-            apkInfo.setErrorMessage("错误：" + e.getMessage());
-            closeIO(outputStream);
-            closeIO(reader);
-        }
-        return apkInfo;
-    }
-
-    private static void closeIO(Closeable closeable) {
-        try {
-            if (closeable != null) {
-                closeable.close();
-            }
-        } catch (Exception e) {
-        }
-    }
-
-
-    public static boolean checkRoot() {
-        boolean isRoot = false;
-        try {
-            for (String dir : SU_BINARY_DIRS) {
-                File su = new File(dir, "su");
-                if (su.exists()) {
-                    isRoot = true;
-                    break;
-                }
-            }
-        } catch (Exception e) {
-        }
-        return isRoot;
-    }
-
-    public static ApkInfo installPkg(Context context, String apkPath) {
-        if (checkRoot()) {
-            ApkInfo apkInfo = runRootCmd("pm install -i 包名 --user 0 " + apkPath);
-            return apkInfo;
-        } else {
-            ApkInfo apkInfo = new ApkInfo();
-            apkInfo.setErrorMessage(context.getString(R.string.none_root));
-            return apkInfo;
-        }
-    }
-
 
     public static void reStartApp(Context context) {
         Intent intent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
@@ -546,7 +479,7 @@ public class Utils {
     }
 
     public static String installSlient(String filePath) {
-        String cmd = "pm install -r/" +filePath ;
+        String cmd = "pm install -r/" + filePath;
 
         Process process = null;
 
@@ -591,12 +524,12 @@ public class Utils {
 
             String s;
 
-            while ((s =successResult.readLine()) != null) {
+            while ((s = successResult.readLine()) != null) {
                 successMsg.append(s);
 
             }
 
-            while ((s = errorResult.readLine())!= null) {
+            while ((s = errorResult.readLine()) != null) {
                 errorMsg.append(s);
 
             }

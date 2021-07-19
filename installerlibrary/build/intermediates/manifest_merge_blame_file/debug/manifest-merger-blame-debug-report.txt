@@ -1,0 +1,88 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="top.wuhaojie.installerlibrary"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="23"
+8-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml
+9        android:targetSdkVersion="29" />
+9-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml
+10
+11    <!-- 辅助功能权限 -->
+12    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+12-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:5:5-85
+12-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:5:22-82
+13    <uses-permission android:name="android.permission.INTERNET" />
+13-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:7:5-67
+13-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:7:22-64
+14    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+14-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:9:5-81
+14-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:9:22-78
+15    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+15-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:11:5-80
+15-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:11:22-77
+16    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+16-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:13:5-84
+16-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:13:22-81
+17    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+17-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:15:5-83
+17-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:15:22-80
+18    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+18-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:15:5-83
+18-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:15:22-80
+19
+20    <application
+20-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:19:5-47:19
+21        android:allowBackup="true"
+21-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:20:9-35
+22        android:label="@string/app_name"
+22-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:21:9-41
+23        android:supportsRtl="true" >
+23-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:22:9-35
+24        <service
+24-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:24:9-35:19
+25            android:name="top.wuhaojie.installerlibrary.InstallAccessibilityService"
+25-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:25:13-56
+26            android:enabled="true"
+26-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:26:13-35
+27            android:exported="true"
+27-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:27:13-36
+28            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+28-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:28:13-79
+29            <intent-filter>
+29-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:29:13-31:29
+30                <action android:name="android.accessibilityservice.AccessibilityService" />
+30-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:30:17-92
+30-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:30:25-89
+31            </intent-filter>
+32
+33            <meta-data
+33-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:32:13-34:72
+34                android:name="android.accessibilityservice"
+34-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:33:17-60
+35                android:resource="@xml/accessibility_service_config" />
+35-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:34:17-69
+36        </service>
+37        <!-- 文件访问 -->
+38        <provider
+38-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:37:9-45:20
+39            android:name="android.support.v4.content.FileProvider"
+39-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:38:13-67
+40            android:authorities="top.wuhaojie.installerlibrary.fileProvider"
+40-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:39:13-77
+41            android:exported="false"
+41-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:40:13-37
+42            android:grantUriPermissions="true" >
+42-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:41:13-47
+43            <meta-data
+43-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:42:13-44:54
+44                android:name="android.support.FILE_PROVIDER_PATHS"
+44-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:43:17-67
+45                android:resource="@xml/file_paths" />
+45-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:44:17-51
+46        </provider>
+47    </application>
+48
+49</manifest>
