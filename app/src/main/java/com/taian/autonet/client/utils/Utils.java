@@ -32,6 +32,7 @@ import java.io.LineNumberReader;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
@@ -566,5 +567,16 @@ public class Utils {
 
         }
         return errorMsg.toString();
+    }
+
+    /**
+     * 0 表示上午，1表示下午。
+     * @return
+     */
+    public static int amPm() {
+        long time = System.currentTimeMillis();
+        Calendar mCalendar = Calendar.getInstance();
+        mCalendar.setTimeInMillis(time);
+        return mCalendar.get(Calendar.AM_PM);
     }
 }

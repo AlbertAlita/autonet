@@ -75,7 +75,7 @@ ADDED from D:\autonet\installerlibrary\src\main\AndroidManifest.xml:32:13-34:72
 		ADDED from D:\autonet\installerlibrary\src\main\AndroidManifest.xml:34:17-69
 	android:name
 		ADDED from D:\autonet\installerlibrary\src\main\AndroidManifest.xml:33:17-60
-provider#android.support.v4.content.FileProvider
+provider#androidx.core.content.FileProvider
 ADDED from D:\autonet\installerlibrary\src\main\AndroidManifest.xml:37:9-45:20
 	android:grantUriPermissions
 		ADDED from D:\autonet\installerlibrary\src\main\AndroidManifest.xml:41:13-47
@@ -84,7 +84,7 @@ ADDED from D:\autonet\installerlibrary\src\main\AndroidManifest.xml:37:9-45:20
 	android:exported
 		ADDED from D:\autonet\installerlibrary\src\main\AndroidManifest.xml:40:13-37
 	android:name
-		ADDED from D:\autonet\installerlibrary\src\main\AndroidManifest.xml:38:13-67
+		ADDED from D:\autonet\installerlibrary\src\main\AndroidManifest.xml:38:13-62
 meta-data#android.support.FILE_PROVIDER_PATHS
 ADDED from D:\autonet\installerlibrary\src\main\AndroidManifest.xml:42:13-44:54
 	android:resource

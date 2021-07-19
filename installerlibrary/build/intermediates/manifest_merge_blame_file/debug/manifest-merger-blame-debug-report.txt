@@ -7,7 +7,7 @@
 7    <uses-sdk
 8        android:minSdkVersion="23"
 8-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml
-9        android:targetSdkVersion="29" />
+9        android:targetSdkVersion="27" />
 9-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml
 10
 11    <!-- 辅助功能权限 -->
@@ -68,8 +68,8 @@
 37        <!-- 文件访问 -->
 38        <provider
 38-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:37:9-45:20
-39            android:name="android.support.v4.content.FileProvider"
-39-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:38:13-67
+39            android:name="androidx.core.content.FileProvider"
+39-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:38:13-62
 40            android:authorities="top.wuhaojie.installerlibrary.fileProvider"
 40-->D:\autonet\installerlibrary\src\main\AndroidManifest.xml:39:13-77
 41            android:exported="false"

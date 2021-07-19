@@ -32,4 +32,8 @@ public interface Constants {
     String TIME_ON = "timeon";
 
     String TIME_OFF = "timeoff";
+
+    int AM = 0;
+
+    int PM = 1;
 }

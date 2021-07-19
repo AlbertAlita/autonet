@@ -113,7 +113,8 @@ public class MainActivity extends BaseActivity {
         mDownloadDelegate.startDownloadTask(new CusDownloadListener() {
 
             @Override
-            public void infoReady(final DownloadTask task, BreakpointInfo info, boolean fromBreakpoint, Listener4SpeedAssistExtend.Listener4SpeedModel model) {
+            public void infoReady(final DownloadTask task, BreakpointInfo info, boolean fromBreakpoint,
+                                  Listener4SpeedAssistExtend.Listener4SpeedModel model) {
                 super.infoReady(task, info, fromBreakpoint, model);
                 int haveSpace = Utils.haveSpace(totalLength);
                 if (haveSpace == -1) {
@@ -193,7 +194,6 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void onNetConnect() {
-//        Toast.makeText(this, R.string.net_available, Toast.LENGTH_LONG).show();
         realDownload();
     }
 
@@ -215,12 +215,9 @@ public class MainActivity extends BaseActivity {
                             CommandUtils.startOrShutDownDevice(MainActivity.this, brakeValue);
                         } else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeTimingType == message.getDataType()) {
                             CommandDataInfo.BrakeTimingCommand brakeCommand = message.getBrakeTimingCommand();
-//                            String openBrake = brakeCommand.getOpenBrake();
-//                            String closeBrake = brakeCommand.getCloseBrake();
-//                            boolean isSuccess = CommandUtils.powerOnOffByAlarm(MainActivity.this,
-//                                    openBrake, closeBrake);
-//                            if (isSuccess)
-//                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
+                            boolean isSuccess = CommandUtils.powerOnOffByAlarm(MainActivity.this, brakeCommand);
+                            if (isSuccess)
+                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
                         }
                     }
 

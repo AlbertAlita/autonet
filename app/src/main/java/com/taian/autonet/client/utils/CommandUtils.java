@@ -6,38 +6,36 @@ import android.content.Intent;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.net.Net;
+import com.video.netty.protobuf.CommandDataInfo;
 
 public class CommandUtils {
 
-    public static boolean powerOnOffByAlarm(Context context, String openBrake, String closeBrake) {
-        boolean isSuccess = false;
+    public static boolean powerOnOffByAlarm(Context context, CommandDataInfo.BrakeTimingCommand brakeTimingCommand) {
         Intent intent = new Intent(Constants.POWER_ON_OFF_BY_ALARM);
-        try {
-            String[] onTime = openBrake.split(" ");
-            String[] yymmdd = onTime[0].split("-");
-            String[] hhss = onTime[1].split(":");
-            int[] on = {Integer.parseInt(yymmdd[0]),
-                    Integer.parseInt(yymmdd[1]),
-                    Integer.parseInt(yymmdd[2]),
-                    Integer.parseInt(hhss[0]),
-                    Integer.parseInt(hhss[1])};
-            String[] offTime = closeBrake.split(" ");
-            String[] offyymmdd = offTime[0].split("-");
-            String[] offhhss = offTime[1].split(":");
-            int[] off = {Integer.parseInt(offyymmdd[0]),
-                    Integer.parseInt(offyymmdd[1]),
-                    Integer.parseInt(offyymmdd[2]),
-                    Integer.parseInt(offhhss[0]),
-                    Integer.parseInt(offhhss[1])};
-            intent.putExtra(Constants.TIME_ON, on);
-            intent.putExtra(Constants.TIME_OFF, off);
+        if (Utils.amPm() == Constants.AM) {
+            int[] amOpenTime = getFormatTime(brakeTimingCommand.getAmOpenBrake());
+            int[] amCloseTime = getFormatTime(brakeTimingCommand.getAmCloseBrake());
+            if (amOpenTime == null || amCloseTime == null) {
+                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_ERROR);
+                return false;
+            }
+            intent.putExtra(Constants.TIME_ON, amOpenTime);
+            intent.putExtra(Constants.TIME_OFF, amCloseTime);
             intent.putExtra("enable", true);
             context.sendBroadcast(intent);
-            isSuccess = true;
-        } catch (Exception e) {
-            WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_ERROR);
+        } else if (Utils.amPm() == Constants.PM) {
+            int[] pmOpenTime = getFormatTime(brakeTimingCommand.getPmOpenBrake());
+            int[] pmCloseTime = getFormatTime(brakeTimingCommand.getPmCloseBrake());
+            if (pmOpenTime == null || pmCloseTime == null) {
+                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_ERROR);
+                return false;
+            }
+            intent.putExtra(Constants.TIME_ON, pmOpenTime);
+            intent.putExtra(Constants.TIME_OFF, pmCloseTime);
+            intent.putExtra("enable", true);
+            context.sendBroadcast(intent);
         }
-        return isSuccess;
+        return true;
     }
 
     public static void startOrShutDownDevice(Context context, int brakeValue) {
@@ -65,5 +63,22 @@ public class CommandUtils {
         }
         if (!hasError)
             WrapNettyClient.getInstance().responseServer(Net.UPDATE_VOLUME);
+    }
+
+    public static int[] getFormatTime(String time) {
+        int[] timeIntArray = null;
+        try {
+            String[] timeStringArray = time.split(" ");
+            String[] yymmdd = timeStringArray[0].split("-");
+            String[] hhss = timeStringArray[1].split(":");
+            timeIntArray = new int[]{Integer.parseInt(yymmdd[0]),
+                    Integer.parseInt(yymmdd[1]),
+                    Integer.parseInt(yymmdd[2]),
+                    Integer.parseInt(hhss[0]),
+                    Integer.parseInt(hhss[1])};
+        } catch (Exception e) {
+            timeIntArray = null;
+        }
+        return timeIntArray;
     }
 }

@@ -141,10 +141,7 @@ public class SplashActivity extends BaseActivity {
                             CommandUtils.startOrShutDownDevice(SplashActivity.this, brakeValue);
                         } else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeTimingType == message.getDataType()) {
                             CommandDataInfo.BrakeTimingCommand brakeCommand = message.getBrakeTimingCommand();
-                            String openBrake = brakeCommand.getOpenBrake();
-                            String closeBrake = brakeCommand.getCloseBrake();
-                            boolean isSuccess = CommandUtils.powerOnOffByAlarm(SplashActivity.this,
-                                    openBrake, closeBrake);
+                            boolean isSuccess = CommandUtils.powerOnOffByAlarm(SplashActivity.this, brakeCommand);
                             if (isSuccess)
                                 WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
                         }
@@ -203,14 +200,13 @@ public class SplashActivity extends BaseActivity {
                 task.enqueue(listener);
             }
         });
-
     }
-
 
     private void otherOpt() {
         //设置定时开关机
         CommandDataInfo.BrakeTimingCommand brakeTimingCommand = packageConfigCommand.getBrakeTimingCommand();
-        CommandUtils.powerOnOffByAlarm(this, brakeTimingCommand.getOpenBrake(), brakeTimingCommand.getCloseBrake());
+        boolean isSuccess = CommandUtils.powerOnOffByAlarm(this, brakeTimingCommand);
+        if (isSuccess) WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
         //获取节目单信息
         CommandDataInfo.ProgramCommand programCommand = packageConfigCommand.getProgramCommand();
         //保存节目单到本地
@@ -343,7 +339,6 @@ public class SplashActivity extends BaseActivity {
 
     @Override
     protected void onNetConnect() {
-//        Toast.makeText(this, R.string.net_available, Toast.LENGTH_LONG).show();
         WrapNettyClient.getInstance().connect();
     }
 

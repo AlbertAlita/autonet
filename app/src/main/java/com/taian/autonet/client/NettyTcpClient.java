@@ -39,10 +39,6 @@ import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
 
-/**
- * Created by littleGreens on 2018-11-10.
- * TCP 客户端
- */
 public class NettyTcpClient {
     private static final String TAG = "NettyTcpClient";
 
