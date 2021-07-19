@@ -91,8 +91,12 @@ public class WrapNettyClient {
 
     //收到数据给服务器反馈
     public void responseServer(int code) {
-        CommandDataInfo.ResponseCommand response = CommandDataInfo.ResponseCommand.newBuilder().
-                setResponseCode(code).
+        CommandDataInfo.ResponseCommand responseCommand = CommandDataInfo.ResponseCommand.newBuilder()
+                .setResponseCode(code)
+                .build();
+        CommandDataInfo.CommandDataInfoMessage response = CommandDataInfo.CommandDataInfoMessage.newBuilder().
+                setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.ResponseType).
+                setResponseCommand(responseCommand).
                 build();
         WrapNettyClient.getInstance().sendMsgToServer(response);
     }

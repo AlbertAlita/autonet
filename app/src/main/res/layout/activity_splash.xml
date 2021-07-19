@@ -8,7 +8,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="非稳定版，仅供测试1.0.0"
+        android:text="非稳定版，仅供测试2.0.0"
         android:textColor="#FF03A9F4"
         android:textSize="18sp"
         app:layout_constraintBottom_toTopOf="@id/subtitle"

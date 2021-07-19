@@ -110,7 +110,7 @@ public class SplashActivity extends BaseActivity {
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
-//                        Log.e("TAG", message.toString());
+                        Log.e("TAG", message.toString());
                         if (CommandDataInfo.CommandDataInfoMessage.CommandType.PackageConfigType == message.getDataType()) {
                             CommandDataInfo.PackageConfigCommand packageConfigCommand = message.getPackageConfigCommand();
                             if (packageConfigCommand.getResponseCommand().getResponseCode() == Net.SUCCESS) {
@@ -289,6 +289,7 @@ public class SplashActivity extends BaseActivity {
                     @Override
                     public void onComplete() {
                         if (mProgressDialog != null) mProgressDialog.dismiss();
+                        Utils.deleteFile(task.getFilename());
                         Intent intent = new Intent(Constants.RE_BOOT);
                         sendBroadcast(intent);
                     }
