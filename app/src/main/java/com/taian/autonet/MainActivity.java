@@ -2,6 +2,7 @@ package com.taian.autonet;
 
 import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.os.Handler;
 import android.widget.Toast;
 
 
@@ -20,6 +21,7 @@ import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
 import com.taian.autonet.client.utils.CommandUtils;
 import com.taian.autonet.client.utils.SpUtils;
+import com.taian.autonet.client.utils.ThreadPoolUtil;
 import com.taian.autonet.client.utils.Utils;
 import com.taian.autonet.view.StandardVideoController;
 import com.video.netty.protobuf.CommandDataInfo;
@@ -41,6 +43,7 @@ public class MainActivity extends BaseActivity {
     private StandardVideoController mController;
     private DownloadDelegate mDownloadDelegate;
     private AlertDialog errorDiaolog;
+    private Handler mHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +52,7 @@ public class MainActivity extends BaseActivity {
 
         mVideoView = findViewById(R.id.player);
 
+//        mHandler = new Handler(getMainLooper());
         initPermission();
         initPlayer();
         downloadVideos();
@@ -204,9 +208,7 @@ public class MainActivity extends BaseActivity {
         WrapNettyClient.getInstance().addNettyClientListener(getClass().getSimpleName(),
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
-                    public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
-//                        Log.e(MainActivity.class.getSimpleName(), msg.toString());
-                        showErrorDialog(message.toString());
+                    public void onMessageResponseClient(final CommandDataInfo.CommandDataInfoMessage message, int index) {
                         if (message.getDataType() == CommandDataInfo.CommandDataInfoMessage.CommandType.VoiceType) {
                             int voiceValue = message.getVoiceCommand().getVoiceValue();
                             CommandUtils.updateVolume(MainActivity.this, voiceValue);
@@ -255,6 +257,8 @@ public class MainActivity extends BaseActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (mVideoView != null) mVideoView.release();
+        WrapNettyClient.getInstance().disConnect();
+        WrapNettyClient.getInstance().removeListener(getClass().getSimpleName());
     }
 
     @Override

@@ -110,7 +110,7 @@ public class SplashActivity extends BaseActivity {
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
-                        Log.e("TAG", message.toString());
+//                        Log.e("TAG", message.toString());
                         if (CommandDataInfo.CommandDataInfoMessage.CommandType.PackageConfigType == message.getDataType()) {
                             CommandDataInfo.PackageConfigCommand packageConfigCommand = message.getPackageConfigCommand();
                             if (packageConfigCommand.getResponseCommand().getResponseCode() == Net.SUCCESS) {
@@ -266,7 +266,6 @@ public class SplashActivity extends BaseActivity {
         public void progress(@NonNull DownloadTask task, long currentOffset, @NonNull SpeedCalculator taskSpeed) {
             super.progress(task, currentOffset, taskSpeed);
             float percent = (float) currentOffset / totalLength * 100;
-//            Log.e("TAG", currentOffset + "----" + totalLength);
             showProgressDialog(getString(R.string.system_upgrading), percent, taskSpeed.speed());
         }
 
@@ -348,7 +347,6 @@ public class SplashActivity extends BaseActivity {
         super.onDestroy();
         if (errorDiaolog != null) errorDiaolog.dismiss();
         WrapNettyClient.getInstance().removeListener(SplashActivity.class.getSimpleName());
-//        WrapNettyClient.getInstance().disConnect();
         if (mHandler != null) {
             mHandler.removeCallbacksAndMessages(null);
             mHandler = null;
