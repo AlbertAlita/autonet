@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import androidx.appcompat.app.AlertDialog;
+
 import io.reactivex.annotations.NonNull;
 import io.reactivex.annotations.Nullable;
 import xyz.doikki.videoplayer.player.VideoView;
@@ -209,6 +210,12 @@ public class MainActivity extends BaseActivity {
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
                     public void onMessageResponseClient(final CommandDataInfo.CommandDataInfoMessage message, int index) {
+//                        mHandler.post(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                showErrorDialog(message.toString());
+//                            }
+//                        });
                         if (message.getDataType() == CommandDataInfo.CommandDataInfoMessage.CommandType.VoiceType) {
                             int voiceValue = message.getVoiceCommand().getVoiceValue();
                             CommandUtils.updateVolume(MainActivity.this, voiceValue);
