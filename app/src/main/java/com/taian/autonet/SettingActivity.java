@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.taian.autonet.client.handler.WrapNettyClient;
@@ -30,6 +31,8 @@ public class SettingActivity extends BaseActivity {
 
         final EditText portEt = findViewById(R.id.port);
         final EditText ipEt = findViewById(R.id.ip);
+        TextView mac = findViewById(R.id.mac);
+        mac.setText(getString(R.string.mac, AppApplication.getMacAdress()));
 
         findViewById(R.id.save).setOnClickListener(new View.OnClickListener() {
             @Override

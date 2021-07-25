@@ -6,9 +6,9 @@
     android:layout_height="match_parent">
 
     <TextView
+        android:text="非稳定版，仅供测试——version_1.0.0"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="非稳定版，仅供测试1.0.0"
         android:textColor="#FF03A9F4"
         android:textSize="18sp"
         app:layout_constraintBottom_toTopOf="@id/subtitle"
@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:text="蕴 康"
         android:textColor="#FF03A9F4"
-        android:textSize="40sp"
+        android:textSize="60sp"
         app:layout_constraintBottom_toTopOf="@id/subtitle"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -35,9 +35,9 @@
         android:id="@+id/subtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="关注中国人的健康生活"
+        android:text="关注老百姓的健康生活"
         android:textColor="#FF03A9F4"
-        android:textSize="30sp"
+        android:textSize="40sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
