@@ -47,11 +47,13 @@ public class SplashActivity extends BaseActivity {
     private AlertDialog errorDiaolog;
     private ThreadPoolUtil threadPoolUtil;
     private DownloadTask task;
+    private int state;
 
     public interface Const {
         int FOR_NEW_IP = 0x01;
         int DELAYED_OPT = 0x02;
-        int UPGRADE_PROGRESS = 0x03;
+        int INSTALLING = -1;
+        int UPGRADE_PROGREE = 0x03;
     }
 
     @Override
@@ -95,9 +97,6 @@ public class SplashActivity extends BaseActivity {
                                 checkApkInfoAndSaveDataAndSkipToLogin();
                             }
                             break;
-                        case Const.UPGRADE_PROGRESS:
-
-                            break;
                     }
                 }
             };
@@ -110,7 +109,7 @@ public class SplashActivity extends BaseActivity {
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
-//                        Log.e("TAG", message.toString());
+                        Log.e("TAG", message.toString());
                         if (CommandDataInfo.CommandDataInfoMessage.CommandType.PackageConfigType == message.getDataType()) {
                             CommandDataInfo.PackageConfigCommand packageConfigCommand = message.getPackageConfigCommand();
                             if (packageConfigCommand.getResponseCommand().getResponseCode() == Net.SUCCESS) {
@@ -219,12 +218,9 @@ public class SplashActivity extends BaseActivity {
     private void showProgressDialog(String title, float progress, String speed) {
         if (mProgressDialog == null) {
             mProgressDialog = new ProgressDialog(this);
-            if (progress != -1) {
-                mProgressDialog.setProgress(0);
-                mProgressDialog.setMax(100);
-                mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            }
-
+            mProgressDialog.setProgress(0);
+            mProgressDialog.setMax(100);
+            mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
             mProgressDialog.setTitle(title);
         }
         if (mProgressDialog != null && progress != -1) {
@@ -282,7 +278,7 @@ public class SplashActivity extends BaseActivity {
                 installer.setOnStateChangedListener(new AutoInstaller.OnStateChangedListener() {
                     @Override
                     public void onStart() {
-                        showProgressDialog(getString(R.string.system_upgrading), -1, null);
+                        showProgressBar(getString(R.string.apk_installing));
                     }
 
                     @Override
@@ -291,15 +287,18 @@ public class SplashActivity extends BaseActivity {
                         Utils.deleteFile(task.getFilename());
                         Intent intent = new Intent(Constants.RE_BOOT);
                         sendBroadcast(intent);
+                        hideProgressBar();
                     }
 
                     @Override
                     public void onNeed2OpenService() {
+                        hideProgressBar();
                         Toast.makeText(SplashActivity.this, "请打开辅助功能服务", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void needPermission() {
+                        hideProgressBar();
                         Toast.makeText(SplashActivity.this, "需要申请存储空间权限", Toast.LENGTH_SHORT).show();
                     }
                 });

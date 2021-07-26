@@ -36,5 +36,6 @@
     <string name="pls_input_right_port">请输入格式正确的端口号！</string>
     <string name="insufficient_disk_space">磁盘空间不足</string>
     <string name="apk_install_error">升级安装失败</string>
-    <string name="apk_installing">程序安装中...</string>
+    <string name="apk_installing">新版程序安装中...</string>
+    <string name="mac">mac地址：%s</string>
 </resources>
