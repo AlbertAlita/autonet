@@ -246,6 +246,7 @@ public class MainActivity extends BaseActivity {
 
 
     private void showProgressDialog(String title, final float progress, final String speed) {
+        if (this.isFinishing()) return;
         if (mProgressDialog == null) {
             mProgressDialog = new ProgressDialog(MainActivity.this);
             mProgressDialog.setProgress(0);

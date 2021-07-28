@@ -194,7 +194,7 @@ public class NettyTcpClient {
                         });
 
                 try {
-                    Log.e("TAG",host);
+                    Log.e("TAG", host);
                     channelFuture = bootstrap.connect(host, tcp_port).addListener(new ChannelFutureListener() {
                         @Override
                         public void operationComplete(ChannelFuture channelFuture) throws Exception {
@@ -217,9 +217,9 @@ public class NettyTcpClient {
                     channelFuture.channel().closeFuture().sync();
                     Log.e(TAG, " 断开连接");
                 } catch (Exception e) {
+                    isConnect = false;
                     e.printStackTrace();
                 } finally {
-                    isConnect = false;
                     listener.onClientStatusConnectChanged(ConnectState.STATUS_CONNECT_CLOSED, mIndex);
                     if (null != channelFuture) {
                         if (channelFuture.channel() != null && channelFuture.channel().isOpen()) {
@@ -227,7 +227,10 @@ public class NettyTcpClient {
                         }
                     }
                     group.shutdownGracefully();
-                    reconnect();
+                    if (!isConnect) {
+                        SystemClock.sleep(reconnectIntervalTime);
+                        reconnect();
+                    }
                 }
             }
         }
@@ -306,7 +309,7 @@ public class NettyTcpClient {
         return flag;
     }
 
-    public void resetReconnectNum(){
+    public void resetReconnectNum() {
         reconnectNum = MAX_CONNECT_TIMES;
     }
 

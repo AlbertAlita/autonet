@@ -33,8 +33,8 @@ public class AppApplication extends Application {
     }
 
     public static String getMacAdress() {
-//        return "abcd";
-        return Utils.getMac(globleContext);
+        return "b8:c6:aa:07:7c:d0";
+//        return Utils.getMac(globleContext);
     }
 
     public static String getIP() {
