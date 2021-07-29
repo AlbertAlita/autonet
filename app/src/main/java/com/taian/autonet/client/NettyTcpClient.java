@@ -136,6 +136,7 @@ public class NettyTcpClient {
 
     public void connect() {
         if (isConnecting) {
+            Log.e(getClass().getSimpleName(), "Connected");
             return;
         }
         Thread clientThread = new Thread("client-Netty") {
@@ -154,7 +155,9 @@ public class NettyTcpClient {
     private void connectServer() {
         synchronized (NettyTcpClient.this) {
             ChannelFuture channelFuture = null;
+            Log.e(getClass().getSimpleName(), "connectServer");
             if (!isConnect) {
+                Log.e(getClass().getSimpleName(), "isConnect");
                 isConnecting = true;
                 group = new NioEventLoopGroup();
                 Bootstrap bootstrap = new Bootstrap().group(group)
@@ -241,6 +244,7 @@ public class NettyTcpClient {
         Log.e(TAG, "disconnect");
         if (group == null) return;
         isNeedReconnect = false;
+        isConnect = false;
         group.shutdownGracefully();
     }
 

@@ -355,6 +355,7 @@ public class SplashActivity extends BaseActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
+        WrapNettyClient.getInstance().disConnect();
         Utils.exitApp(this);
     }
 }
