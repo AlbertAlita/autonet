@@ -6,7 +6,7 @@
     android:layout_height="match_parent">
 
     <TextView
-        android:text="非稳定版，仅供测试——version_1.0.0"
+        android:text="独测版"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textColor="#FF03A9F4"
