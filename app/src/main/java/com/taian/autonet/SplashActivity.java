@@ -173,6 +173,7 @@ public class SplashActivity extends BaseActivity {
     }
 
 
+
     private void checkApkInfoAndSaveDataAndSkipToLogin() {
         if (packageConfigCommand == null) {
             return;

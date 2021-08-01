@@ -13,6 +13,7 @@ import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
 import com.video.netty.protobuf.CommandDataInfo;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import io.netty.bootstrap.Bootstrap;
@@ -145,14 +146,14 @@ public class NettyTcpClient {
                 super.run();
                 isNeedReconnect = true;
                 reconnectNum = MAX_CONNECT_TIMES;
-                connectServer();
+                connectServer(false);
             }
         };
         clientThread.start();
     }
 
 
-    private void connectServer() {
+    private void connectServer(boolean isByHandler) {
         synchronized (NettyTcpClient.this) {
             ChannelFuture channelFuture = null;
             Log.e(getClass().getSimpleName(), "connectServer");
@@ -231,8 +232,8 @@ public class NettyTcpClient {
                     }
                     group.shutdownGracefully();
                     if (!isConnect) {
-                        SystemClock.sleep(reconnectIntervalTime);
-                        reconnect();
+                        SystemClock.sleep(new Random().nextInt(10000));
+                        reconnect(isByHandler);
                     }
                 }
             }
@@ -248,14 +249,14 @@ public class NettyTcpClient {
         group.shutdownGracefully();
     }
 
-    public void reconnect() {
+    public void reconnect(boolean isByHandler) {
         Log.e(TAG, "reconnect");
         if (isNeedReconnect && reconnectNum > 0 && !isConnect) {
             reconnectNum--;
             SystemClock.sleep(reconnectIntervalTime);
             if (isNeedReconnect && reconnectNum > 0 && !isConnect) {
                 Log.e(TAG, "重新连接");
-                connectServer();
+                connectServer(isByHandler);
             }
         }
     }

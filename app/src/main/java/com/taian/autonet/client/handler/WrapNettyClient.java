@@ -79,7 +79,7 @@ public class WrapNettyClient {
     public void reConnect() {
         if (mNettyTcpClient != null) {
             mNettyTcpClient.resetReconnectNum();
-            mNettyTcpClient.reconnect();
+            mNettyTcpClient.reconnect(true);
         }
     }
 

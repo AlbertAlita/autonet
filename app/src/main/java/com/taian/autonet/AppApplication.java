@@ -3,6 +3,7 @@ package com.taian.autonet;
 
 import android.app.Application;
 import android.os.Process;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.taian.autonet.client.constant.Constants;
@@ -18,6 +19,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 public class AppApplication extends Application {
 
@@ -33,8 +35,9 @@ public class AppApplication extends Application {
     }
 
     public static String getMacAdress() {
-//        return "B8:C6:AA:18:0A:53";
-        return Utils.getMac(globleContext);
+        String mac = Utils.getMac(globleContext);
+        if (!TextUtils.isEmpty(mac)) mac.toLowerCase(Locale.ENGLISH);
+        return mac;
     }
 
     public static String getIP() {

@@ -45,6 +45,7 @@ public class MainActivity extends BaseActivity {
     private DownloadDelegate mDownloadDelegate;
     private AlertDialog errorDiaolog;
     private DownloadTask mTask;
+    private Handler mHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,7 +54,7 @@ public class MainActivity extends BaseActivity {
 
         mVideoView = findViewById(R.id.player);
 
-//        mHandler = new Handler(getMainLooper());
+        mHandler = new Handler(getMainLooper());
         initPermission();
         initPlayer();
         downloadVideos();
@@ -262,6 +263,13 @@ public class MainActivity extends BaseActivity {
             mProgressDialog.setProgress((int) progress);
         }
         if (!mProgressDialog.isShowing()) mProgressDialog.show();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        WrapNettyClient.getInstance().disConnect();
+        WrapNettyClient.getInstance().removeListener(getClass().getSimpleName());
     }
 
     @Override

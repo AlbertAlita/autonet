@@ -71,9 +71,9 @@ public class Utils {
             return null;
         }
         mac = info.getMacAddress();
-        if (!TextUtils.isEmpty(mac)) {
-            mac = mac.toUpperCase(Locale.ENGLISH);
-        }
+//        if (!TextUtils.isEmpty(mac)) {
+//            mac = mac.toUpperCase(Locale.ENGLISH);
+//        }
         return mac;
     }
 
