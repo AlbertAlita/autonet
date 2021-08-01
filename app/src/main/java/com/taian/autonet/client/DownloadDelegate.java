@@ -62,6 +62,11 @@ public class DownloadDelegate {
     public BreakpointInfo updateIndex() {
         index += 1;
         if (index > cachedVideoList.size()) index = 1;
+        //缺这个编号就跳到下一个
+        if (getCurrentVideo() == null) {
+            index += 1;
+            if (index > cachedVideoList.size()) index = 1;
+        }
         BreakpointInfo currentInfo = StatusUtil.getCurrentInfo(getCurrentVideo().getVideoPath(),
                 AppApplication.COMPLETE_CACHE_PATH, getCurrentVideo().getVideoName());
         if (currentInfo != null) {

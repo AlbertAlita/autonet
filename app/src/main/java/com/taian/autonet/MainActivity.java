@@ -44,7 +44,7 @@ public class MainActivity extends BaseActivity {
     private StandardVideoController mController;
     private DownloadDelegate mDownloadDelegate;
     private AlertDialog errorDiaolog;
-    private Handler mHandler;
+    private DownloadTask mTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,6 +121,7 @@ public class MainActivity extends BaseActivity {
             public void infoReady(final DownloadTask task, BreakpointInfo info, boolean fromBreakpoint,
                                   Listener4SpeedAssistExtend.Listener4SpeedModel model) {
                 super.infoReady(task, info, fromBreakpoint, model);
+                mTask = task;
                 int haveSpace = Utils.haveSpace(totalLength);
                 if (haveSpace == -1) {
                     List<VideoInfo> cachedVideoList = mDownloadDelegate.getCachedVideoList();
@@ -147,6 +148,7 @@ public class MainActivity extends BaseActivity {
             @Override
             public void progress(@NonNull DownloadTask task, long currentOffset, @NonNull SpeedCalculator taskSpeed) {
                 super.progress(task, currentOffset, taskSpeed);
+                mTask = task;
                 float percent = (float) currentOffset / totalLength * 100;
                 showProgressDialog(getString(R.string.video_downloading), percent, speed);
             }
@@ -155,6 +157,7 @@ public class MainActivity extends BaseActivity {
             public void taskEnd(@NonNull final DownloadTask task, @NonNull EndCause cause,
                                 @Nullable Exception realCause, @NonNull SpeedCalculator taskSpeed) {
                 super.taskEnd(task, cause, realCause, taskSpeed);
+                mTask = null;
                 if (cause == null) {
                     downloadError(getString(R.string.unkown_error_1));
                     return;
@@ -246,6 +249,7 @@ public class MainActivity extends BaseActivity {
 
 
     private void showProgressDialog(String title, final float progress, final String speed) {
+        if (this.isFinishing()) return;
         if (mProgressDialog == null) {
             mProgressDialog = new ProgressDialog(MainActivity.this);
             mProgressDialog.setProgress(0);
@@ -263,9 +267,13 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mVideoView != null) mVideoView.release();
+        if (mVideoView != null) {
+            mVideoView.release();
+            mVideoView = null;
+        }
         WrapNettyClient.getInstance().disConnect();
         WrapNettyClient.getInstance().removeListener(getClass().getSimpleName());
+        if (mTask != null) mTask.cancel();
     }
 
     @Override
