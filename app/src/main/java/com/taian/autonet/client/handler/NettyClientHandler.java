@@ -5,6 +5,7 @@ import android.util.Log;
 
 
 import com.taian.autonet.AppApplication;
+import com.taian.autonet.client.NettyTcpClient;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.status.ConnectState;
 import com.video.netty.protobuf.CommandDataInfo;
@@ -112,6 +113,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
 //        NettyTcpClient.getInstance().setConnectStatus(false);
         Log.e(TAG, "exceptionCaught");
         listener.onClientStatusConnectChanged(ConnectState.STATUS_CONNECT_ERROR, index);
+        WrapNettyClient.getInstance().connect(NettyTcpClient.reconnectIntervalTime);
         cause.printStackTrace();
         ctx.close();
     }

@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Config;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.taian.autonet.client.constant.Constants;
+import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.utils.ActivityUtil;
 import com.taian.autonet.client.utils.PermissionUtils;
 import com.taian.autonet.client.utils.Utils;

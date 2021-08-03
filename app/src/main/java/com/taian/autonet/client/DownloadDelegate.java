@@ -49,14 +49,23 @@ public class DownloadDelegate {
     }
 
     public VideoInfo getCurrentVideo() {
+        VideoInfo temp = null;
         if (cachedVideoList != null) {
-            for (VideoInfo videoInfo : cachedVideoList) {
+            int size = cachedVideoList.size();
+            for (int i = 0; i < size; i++) {
+                VideoInfo videoInfo = cachedVideoList.get(i);
                 if (videoInfo.getVideoNumber() == index) {
-                    return videoInfo;
+                    if (videoInfo == null) {
+                        int next = i + 1;
+                        if (next > size - 1) next = 1;
+                        temp = cachedVideoList.get(next);
+                    } else {
+                        temp = videoInfo;
+                    }
                 }
             }
         }
-        return null;
+        return temp;
     }
 
     public BreakpointInfo updateIndex() {
@@ -72,7 +81,8 @@ public class DownloadDelegate {
         if (currentInfo != null) {
             long totalOffset = currentInfo.getTotalOffset();
             long totalLength = currentInfo.getTotalLength();
-            Log.e("TAG", totalOffset + "------" + totalLength);
+            if (Config.LOG_TOGGLE)
+                Log.e("TAG", totalOffset + "------" + totalLength);
         }
         return currentInfo;
     }

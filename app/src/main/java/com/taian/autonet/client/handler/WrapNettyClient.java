@@ -1,5 +1,6 @@
 package com.taian.autonet.client.handler;
 
+import android.content.Context;
 import android.text.TextUtils;
 
 import com.google.protobuf.GeneratedMessageV3;
@@ -66,21 +67,20 @@ public class WrapNettyClient {
         });
     }
 
-    public void connect() {
-        if (mNettyTcpClient != null && !mNettyTcpClient.isConnecting())
-            mNettyTcpClient.connect();
+    public void connect(long reconnectIntervalTime) {
+        if (mNettyTcpClient != null && !mNettyTcpClient.getConnectStatus())
+            mNettyTcpClient.connect(reconnectIntervalTime);
     }
 
-    public void disConnect() {
+    public boolean isConnecting() {
+        if (mNettyTcpClient == null)
+            return false;
+        else return mNettyTcpClient.getConnectStatus();
+    }
+
+    public void disConnect(Context context) {
         if (mNettyTcpClient != null)
-            mNettyTcpClient.disconnect();
-    }
-
-    public void reConnect() {
-        if (mNettyTcpClient != null) {
-            mNettyTcpClient.resetReconnectNum();
-            mNettyTcpClient.reconnect(true);
-        }
+            mNettyTcpClient.disconnect(context);
     }
 
 
@@ -90,6 +90,16 @@ public class WrapNettyClient {
 
     public void removeListener(String tag) {
         nettyClientListeners.remove(tag);
+    }
+
+    public NettyClientListener getListenerByTag(String tag) {
+        if (nettyClientListeners != null) return nettyClientListeners.get(tag);
+        else return null;
+    }
+
+    public int getActiveListener() {
+        if (nettyClientListeners == null) return 0;
+        else return nettyClientListeners.size();
     }
 
     public void sendMsgToServer(GeneratedMessageV3 command) {

@@ -18,6 +18,7 @@ import com.liulishuo.okdownload.SpeedCalculator;
 import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo;
 import com.liulishuo.okdownload.core.cause.EndCause;
 import com.liulishuo.okdownload.core.listener.assist.Listener4SpeedAssistExtend;
+import com.taian.autonet.client.NettyTcpClient;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
 import com.taian.autonet.client.listener.CusDownloadListener;
@@ -104,7 +105,10 @@ public class SplashActivity extends BaseActivity {
     }
 
     private void connectServerAndGetBaiscInfo() {
-        WrapNettyClient.getInstance().connect();
+        int activeListener = WrapNettyClient.getInstance().getActiveListener();
+        Log.e(getClass().getSimpleName(), activeListener + "");
+        if (activeListener != 0) WrapNettyClient.getInstance().disConnect(this);
+        WrapNettyClient.getInstance().connect(NettyTcpClient.reconnectIntervalTime);
         WrapNettyClient.getInstance().addNettyClientListener(SplashActivity.class.getSimpleName(),
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
@@ -124,7 +128,7 @@ public class SplashActivity extends BaseActivity {
                                 }
                             } else {
                                 //断开链接
-                                WrapNettyClient.getInstance().disConnect();
+                                WrapNettyClient.getInstance().disConnect(SplashActivity.this);
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
@@ -171,7 +175,6 @@ public class SplashActivity extends BaseActivity {
                     }
                 });
     }
-
 
 
     private void checkApkInfoAndSaveDataAndSkipToLogin() {
@@ -333,13 +336,13 @@ public class SplashActivity extends BaseActivity {
         if (requestCode == Const.FOR_NEW_IP) {
             if (mHandler != null)
                 mHandler.sendEmptyMessageDelayed(Const.DELAYED_OPT, 3000);
-            WrapNettyClient.getInstance().connect();
+            WrapNettyClient.getInstance().connect(NettyTcpClient.reconnectIntervalTime);
         }
     }
 
     @Override
     protected void onNetConnect() {
-        WrapNettyClient.getInstance().connect();
+        WrapNettyClient.getInstance().connect(NettyTcpClient.reconnectIntervalTime);
     }
 
     @Override
@@ -356,7 +359,8 @@ public class SplashActivity extends BaseActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        WrapNettyClient.getInstance().disConnect();
+        WrapNettyClient.getInstance().disConnect(this);
+        WrapNettyClient.getInstance().removeListener(SplashActivity.class.getSimpleName());
         Utils.exitApp(this);
     }
 }

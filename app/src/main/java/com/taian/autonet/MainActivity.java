@@ -237,13 +237,23 @@ public class MainActivity extends BaseActivity {
 
                     @Override
                     public void onClientStatusConnectChanged(int statusCode, int index) {
-                        if (statusCode == ConnectState.STATUS_CONNECT_ERROR)
+                        if (statusCode == ConnectState.STATUS_CONNECT_ERROR) {
                             MainActivity.this.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     Toast.makeText(MainActivity.this, R.string.net_error, Toast.LENGTH_SHORT).show();
                                 }
                             });
+                        } else if (statusCode == ConnectState.STATUS_CONNECT_SUCCESS) {
+                            CommandDataInfo.TokenCommand tokenCommand = CommandDataInfo.TokenCommand.newBuilder()
+                                    .setToken(AppApplication.getMacAdress())
+                                    .build();
+                            CommandDataInfo.CommandDataInfoMessage command = CommandDataInfo.CommandDataInfoMessage.newBuilder()
+                                    .setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.TokenType)
+                                    .setTokenCommand(tokenCommand)
+                                    .build();
+                            WrapNettyClient.getInstance().sendMsgToServer(command);
+                        }
                     }
                 });
     }
@@ -268,7 +278,7 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        WrapNettyClient.getInstance().disConnect();
+        WrapNettyClient.getInstance().disConnect(this);
         WrapNettyClient.getInstance().removeListener(getClass().getSimpleName());
     }
 
@@ -279,7 +289,7 @@ public class MainActivity extends BaseActivity {
             mVideoView.release();
             mVideoView = null;
         }
-        WrapNettyClient.getInstance().disConnect();
+        WrapNettyClient.getInstance().disConnect(this);
         WrapNettyClient.getInstance().removeListener(getClass().getSimpleName());
         if (mTask != null) mTask.cancel();
     }

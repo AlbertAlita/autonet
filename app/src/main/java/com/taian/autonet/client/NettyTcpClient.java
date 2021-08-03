@@ -1,8 +1,11 @@
 package com.taian.autonet.client;
 
+import android.app.AlertDialog;
+import android.content.Context;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.Toast;
 
 
 import com.google.protobuf.GeneratedMessageV3;
@@ -11,6 +14,7 @@ import com.taian.autonet.client.listener.MessageStateListener;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
+import com.taian.autonet.client.utils.ThreadPoolUtil;
 import com.video.netty.protobuf.CommandDataInfo;
 
 import java.util.Random;
@@ -61,7 +65,7 @@ public class NettyTcpClient {
     private boolean isNeedReconnect = true;
     private boolean isConnecting = false;
 
-    private long reconnectIntervalTime = 5000;
+    public static long reconnectIntervalTime = 5000;
     private static final Integer CONNECT_TIMEOUT_MILLIS = 5000;
 
     private String host;
@@ -135,7 +139,7 @@ public class NettyTcpClient {
         return isSendheartBeat;
     }
 
-    public void connect() {
+    public void connect(final long reconnectIntervalTime) {
         if (isConnecting) {
             Log.e(getClass().getSimpleName(), "Connected");
             return;
@@ -146,19 +150,22 @@ public class NettyTcpClient {
                 super.run();
                 isNeedReconnect = true;
                 reconnectNum = MAX_CONNECT_TIMES;
-                connectServer(false);
+                connectServer(reconnectIntervalTime);
             }
         };
         clientThread.start();
     }
 
+    ThreadPoolUtil threadPool = new ThreadPoolUtil(ThreadPoolUtil.Type.CachedThread, 1);
 
-    private void connectServer(boolean isByHandler) {
+    private void connectServer(final long reconnectIntervalTime) {
         synchronized (NettyTcpClient.this) {
             ChannelFuture channelFuture = null;
-            Log.e(getClass().getSimpleName(), "connectServer");
+            if (Config.LOG_TOGGLE)
+                Log.e(getClass().getSimpleName(), "connectServer");
             if (!isConnect) {
-                Log.e(getClass().getSimpleName(), "isConnect");
+                if (Config.LOG_TOGGLE)
+                    Log.e(getClass().getSimpleName(), "isConnect");
                 isConnecting = true;
                 group = new NioEventLoopGroup();
                 Bootstrap bootstrap = new Bootstrap().group(group)
@@ -178,27 +185,14 @@ public class NettyTcpClient {
                                 pipeline.addLast(new ProtobufDecoder(CommandDataInfo.CommandDataInfoMessage.getDefaultInstance()));
                                 pipeline.addLast(new ProtobufVarint32LengthFieldPrepender());
                                 pipeline.addLast(new ProtobufEncoder());
-
-//                                //黏包处理,需要客户端、服务端配合
-//
-//                                if (!TextUtils.isEmpty(packetSeparator)) {
-//                                    ByteBuf delimiter= Unpooled.buffer();
-//                                    delimiter.writeBytes(packetSeparator.getBytes());
-//                                    ch.pipeline().addLast(new DelimiterBasedFrameDecoder(maxPacketLong,delimiter));
-//                                } else {
-//                                    ch.pipeline().addLast(new LineBasedFrameDecoder(maxPacketLong));
-//                                }
-//                                ch.pipeline().addLast(new StringEncoder(CharsetUtil.UTF_8));
-//                                ch.pipeline().addLast(new StringDecoder(CharsetUtil.UTF_8));
-
-
                                 pipeline.addLast(new NettyClientHandler(listener, mIndex, isSendheartBeat,
                                         heartBeatData, packetSeparator));
                             }
                         });
 
                 try {
-                    Log.e("TAG", host);
+                    if (Config.LOG_TOGGLE)
+                        Log.e("TAG", host);
                     channelFuture = bootstrap.connect(host, tcp_port).addListener(new ChannelFutureListener() {
                         @Override
                         public void operationComplete(ChannelFuture channelFuture) throws Exception {
@@ -219,7 +213,8 @@ public class NettyTcpClient {
 
                     // Wait until the connection is closed.
                     channelFuture.channel().closeFuture().sync();
-                    Log.e(TAG, " 断开连接");
+                    if (Config.LOG_TOGGLE)
+                        Log.e(TAG, " 断开连接");
                 } catch (Exception e) {
                     isConnect = false;
                     e.printStackTrace();
@@ -232,8 +227,12 @@ public class NettyTcpClient {
                     }
                     group.shutdownGracefully();
                     if (!isConnect) {
-                        SystemClock.sleep(new Random().nextInt(10000));
-                        reconnect(isByHandler);
+                        threadPool.schedule(new Runnable() {
+                            @Override
+                            public void run() {
+                                reconnect(reconnectIntervalTime);
+                            }
+                        }, reconnectIntervalTime, TimeUnit.MILLISECONDS);
                     }
                 }
             }
@@ -241,45 +240,27 @@ public class NettyTcpClient {
     }
 
 
-    public void disconnect() {
-        Log.e(TAG, "disconnect");
+    public void disconnect(Context context) {
+        if (Config.LOG_TOGGLE)
+            Log.e(TAG, "disconnect");
         if (group == null) return;
         isNeedReconnect = false;
         isConnect = false;
         group.shutdownGracefully();
     }
 
-    public void reconnect(boolean isByHandler) {
-        Log.e(TAG, "reconnect");
+    public void reconnect(long reconnectIntervalTime) {
+        if (Config.LOG_TOGGLE)
+            Log.e(TAG, "reconnect");
         if (isNeedReconnect && reconnectNum > 0 && !isConnect) {
             reconnectNum--;
             SystemClock.sleep(reconnectIntervalTime);
             if (isNeedReconnect && reconnectNum > 0 && !isConnect) {
-                Log.e(TAG, "重新连接");
-                connectServer(isByHandler);
+                if (Config.LOG_TOGGLE)
+                    Log.e(TAG, "重新连接");
+                connectServer(reconnectIntervalTime);
             }
         }
-    }
-
-    /**
-     * 异步发送
-     *
-     * @param data     要发送的数据
-     * @param listener 发送结果回调
-     * @return 方法执行结果
-     */
-    public boolean sendMsgToServer(String data, final MessageStateListener listener) {
-        boolean flag = channel != null && isConnect;
-        if (flag) {
-            String separator = TextUtils.isEmpty(packetSeparator) ? System.getProperty("line.separator") : packetSeparator;
-            ChannelFuture channelFuture = channel.writeAndFlush(data + separator).addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                    listener.isSendSuccss(channelFuture.isSuccess());
-                }
-            });
-        }
-        return flag;
     }
 
     /**
