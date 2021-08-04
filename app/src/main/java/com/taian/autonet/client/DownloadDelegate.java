@@ -49,23 +49,26 @@ public class DownloadDelegate {
     }
 
     public VideoInfo getCurrentVideo() {
-        VideoInfo temp = null;
-        if (cachedVideoList != null) {
-            int size = cachedVideoList.size();
-            for (int i = 0; i < size; i++) {
-                VideoInfo videoInfo = cachedVideoList.get(i);
-                if (videoInfo.getVideoNumber() == index) {
-                    if (videoInfo == null) {
-                        int next = i + 1;
-                        if (next > size - 1) next = 1;
-                        temp = cachedVideoList.get(next);
-                    } else {
-                        temp = videoInfo;
-                    }
-                }
+        int size = cachedVideoList.size();
+        int positon = -1;
+        for (int i = 0; i < size; i++) {
+            int pos = cachedVideoList.indexOf(new VideoInfo(index));
+            if (pos != -1) {
+                positon = pos;
+                break;
+            } else {
+                index += 1;
+                if (index > size) index = 1;
             }
         }
-        return temp;
+        try {
+            return cachedVideoList.get(positon);
+        } catch (Exception e) {
+            VideoInfo videoInfo = new VideoInfo();
+            videoInfo.setCode(Constants.ERROR);
+            videoInfo.setVideoName("找不到节目单");
+            return videoInfo;
+        }
     }
 
     public BreakpointInfo updateIndex() {

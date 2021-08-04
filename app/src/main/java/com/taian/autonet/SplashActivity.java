@@ -117,14 +117,24 @@ public class SplashActivity extends BaseActivity {
                         if (CommandDataInfo.CommandDataInfoMessage.CommandType.PackageConfigType == message.getDataType()) {
                             CommandDataInfo.PackageConfigCommand packageConfigCommand = message.getPackageConfigCommand();
                             if (packageConfigCommand.getResponseCommand().getResponseCode() == Net.SUCCESS) {
-                                isServerResponsed = true;
                                 SplashActivity.this.packageConfigCommand = packageConfigCommand;
-                                if (packageConfigCommand == null || packageConfigCommand.getProgramCommand().getVideoInfoList() == null)
+                                if (packageConfigCommand == null || packageConfigCommand.getProgramCommand().getVideoInfoList() == null ||
+                                        packageConfigCommand.getProgramCommand().getVideoInfoList().isEmpty()) {
                                     WrapNettyClient.getInstance().responseServer(Net.PROGRAM_ERROR);
-                                else
+                                    mHandler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            new AlertDialog.Builder(SplashActivity.this).
+                                                    setMessage("尚未配置节目单！").
+                                                    show();
+                                        }
+                                    });
+                                } else {
+                                    isServerResponsed = true;
                                     WrapNettyClient.getInstance().responseServer(Net.PROGRAM_SUCCESS);
-                                if (isTimeOvered) {
-                                    checkApkInfoAndSaveDataAndSkipToLogin();
+                                    if (isTimeOvered) {
+                                        checkApkInfoAndSaveDataAndSkipToLogin();
+                                    }
                                 }
                             } else {
                                 //断开链接

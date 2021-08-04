@@ -10,6 +10,8 @@ import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.status.ConnectState;
 import com.video.netty.protobuf.CommandDataInfo;
 
+import java.util.Random;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -111,9 +113,11 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         // Close the connection when an exception is raised.
 //        NettyTcpClient.getInstance().setConnectStatus(false);
+
         Log.e(TAG, "exceptionCaught");
         listener.onClientStatusConnectChanged(ConnectState.STATUS_CONNECT_ERROR, index);
-        WrapNettyClient.getInstance().connect(NettyTcpClient.reconnectIntervalTime);
+        WrapNettyClient.getInstance().disConnect(null);
+        WrapNettyClient.getInstance().connect(new Random().nextInt(5000));
         cause.printStackTrace();
         ctx.close();
     }

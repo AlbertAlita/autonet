@@ -36,4 +36,6 @@ public interface Constants {
     int AM = 0;
 
     int PM = 1;
+
+    int ERROR = -2;
 }

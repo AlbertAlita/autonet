@@ -278,6 +278,9 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        if (mVideoView != null) {
+            mVideoView.release();
+        }
         WrapNettyClient.getInstance().disConnect(this);
         WrapNettyClient.getInstance().removeListener(getClass().getSimpleName());
     }
@@ -296,8 +299,10 @@ public class MainActivity extends BaseActivity {
 
     @Override
     public void onBackPressed() {
-        if (!mVideoView.onBackPressed()) {
-            super.onBackPressed();
+        if (mVideoView != null) {
+            mVideoView.release();
+            mVideoView = null;
         }
+        super.onBackPressed();
     }
 }
