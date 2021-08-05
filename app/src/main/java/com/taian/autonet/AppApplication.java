@@ -21,6 +21,10 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
+import xyz.doikki.videoplayer.ijk.IjkPlayerFactory;
+import xyz.doikki.videoplayer.player.VideoViewConfig;
+import xyz.doikki.videoplayer.player.VideoViewManager;
+
 public class AppApplication extends Application {
 
     public static AppApplication globleContext;
@@ -32,6 +36,10 @@ public class AppApplication extends Application {
         super.onCreate();
         globleContext = this;
         Thread.setDefaultUncaughtExceptionHandler(uncaughtExceptionHandler);
+        VideoViewManager.setConfig(VideoViewConfig.newBuilder()
+                //使用使用IjkPlayer解码
+                .setPlayerFactory(IjkPlayerFactory.create())
+                .build());
     }
 
     public static String getMacAdress() {

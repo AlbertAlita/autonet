@@ -13,24 +13,24 @@ public class CommandUtils {
     public static boolean powerOnOffByAlarm(Context context, CommandDataInfo.BrakeTimingCommand brakeTimingCommand) {
         Intent intent = new Intent(Constants.POWER_ON_OFF_BY_ALARM);
         if (Utils.amPm() == Constants.AM) {
-            int[] amOpenTime = getFormatTime(brakeTimingCommand.getAmOpenBrake());
-            int[] amCloseTime = getFormatTime(brakeTimingCommand.getAmCloseBrake());
-            if (amOpenTime == null || amCloseTime == null) {
-                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_ERROR);
-                return false;
-            }
-            intent.putExtra(Constants.TIME_ON, amOpenTime);
-            intent.putExtra(Constants.TIME_OFF, amCloseTime);
-            intent.putExtra("enable", true);
-            context.sendBroadcast(intent);
-        } else if (Utils.amPm() == Constants.PM) {
             int[] pmOpenTime = getFormatTime(brakeTimingCommand.getPmOpenBrake());
-            int[] pmCloseTime = getFormatTime(brakeTimingCommand.getPmCloseBrake());
-            if (pmOpenTime == null || pmCloseTime == null) {
+            int[] amCloseTime = getFormatTime(brakeTimingCommand.getAmCloseBrake());
+            if (pmOpenTime == null || amCloseTime == null) {
                 WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_ERROR);
                 return false;
             }
             intent.putExtra(Constants.TIME_ON, pmOpenTime);
+            intent.putExtra(Constants.TIME_OFF, amCloseTime);
+            intent.putExtra("enable", true);
+            context.sendBroadcast(intent);
+        } else if (Utils.amPm() == Constants.PM) {
+            int[] amOpenTime = getFormatTime(brakeTimingCommand.getAmOpenBrake());
+            int[] pmCloseTime = getFormatTime(brakeTimingCommand.getPmCloseBrake());
+            if (amOpenTime == null || pmCloseTime == null) {
+                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_ERROR);
+                return false;
+            }
+            intent.putExtra(Constants.TIME_ON, amOpenTime);
             intent.putExtra(Constants.TIME_OFF, pmCloseTime);
             intent.putExtra("enable", true);
             context.sendBroadcast(intent);

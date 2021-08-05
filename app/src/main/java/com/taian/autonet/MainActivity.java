@@ -19,6 +19,7 @@ import com.taian.autonet.client.listener.CusDownloadListener;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
+import com.taian.autonet.client.utils.ActivityUtil;
 import com.taian.autonet.client.utils.CommandUtils;
 import com.taian.autonet.client.utils.SpUtils;
 import com.taian.autonet.client.utils.ThreadPoolUtil;
@@ -275,15 +276,17 @@ public class MainActivity extends BaseActivity {
         if (!mProgressDialog.isShowing()) mProgressDialog.show();
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (mVideoView != null) {
-            mVideoView.release();
-        }
-        WrapNettyClient.getInstance().disConnect(this);
-        WrapNettyClient.getInstance().removeListener(getClass().getSimpleName());
-    }
+//    @Override
+//    protected void onStop() {
+//        super.onStop();
+//        if (mVideoView != null) {
+//            mVideoView.release();
+//        }
+//        WrapNettyClient.getInstance().disConnect(this);
+//        WrapNettyClient.getInstance().removeListener(getClass().getSimpleName());
+//        ActivityUtil.AppExit(this);
+//        ActivityUtil.finishAllActivity();
+//    }
 
     @Override
     protected void onDestroy() {

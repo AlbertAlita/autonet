@@ -87,6 +87,7 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.1'
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.5@aar'
     implementation 'xyz.doikki.android.dkplayer:dkplayer-java:3.3.3'
+    implementation 'xyz.doikki.android.dkplayer:player-ijk:3.3.4'
     implementation files('libs/netty-tcp-4.1.33-1.0.jar')
     implementation project(':installerlibrary')
 }
