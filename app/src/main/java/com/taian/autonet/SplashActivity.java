@@ -18,6 +18,7 @@ import com.liulishuo.okdownload.SpeedCalculator;
 import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo;
 import com.liulishuo.okdownload.core.cause.EndCause;
 import com.liulishuo.okdownload.core.listener.assist.Listener4SpeedAssistExtend;
+import com.taian.autonet.client.Config;
 import com.taian.autonet.client.NettyTcpClient;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
@@ -113,7 +114,8 @@ public class SplashActivity extends BaseActivity {
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
-                        Log.e("TAG", message.toString());
+                        if (Config.LOG_TOGGLE)
+                            Log.e("TAG", message.toString());
                         if (CommandDataInfo.CommandDataInfoMessage.CommandType.PackageConfigType == message.getDataType()) {
                             CommandDataInfo.PackageConfigCommand packageConfigCommand = message.getPackageConfigCommand();
                             if (packageConfigCommand.getResponseCommand().getResponseCode() == Net.SUCCESS) {
@@ -297,7 +299,9 @@ public class SplashActivity extends BaseActivity {
 
                     @Override
                     public void onComplete() {
-                        if (mProgressDialog != null) mProgressDialog.dismiss();
+                        hideProgressBar();
+                        if (Config.LOG_TOGGLE)
+                            Log.e("TAG", task.getFilename());
                         Utils.deleteFile(task.getFilename());
                         Intent intent = new Intent(Constants.RE_BOOT);
                         sendBroadcast(intent);

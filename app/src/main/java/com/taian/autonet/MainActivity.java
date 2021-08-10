@@ -97,6 +97,8 @@ public class MainActivity extends BaseActivity {
                             boolean deleteFile = Utils.deleteFile(videoName);
                             if (deleteFile) {
                                 realDownload();
+                            } else {
+                                mVideoView.release();
                             }
                         }
                         break;

@@ -64,6 +64,7 @@ public class DownloadDelegate {
         try {
             return cachedVideoList.get(positon);
         } catch (Exception e) {
+            e.printStackTrace();
             VideoInfo videoInfo = new VideoInfo();
             videoInfo.setCode(Constants.ERROR);
             videoInfo.setVideoName("找不到节目单");

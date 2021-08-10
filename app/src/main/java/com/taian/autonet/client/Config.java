@@ -6,5 +6,5 @@ package com.taian.autonet.client;
 
 public class Config {
 
-    public static boolean LOG_TOGGLE = false;
+    public static boolean LOG_TOGGLE = true;
 }
