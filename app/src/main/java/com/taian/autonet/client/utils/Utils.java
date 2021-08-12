@@ -221,6 +221,18 @@ public class Utils {
         }
     }
 
+    public static String getVersionName(Context context) {
+        String versionName = "";
+        try {
+            //获取软件版本号，对应AndroidManifest.xml下android:versionName
+            versionName = context.getPackageManager().
+                    getPackageInfo(context.getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+        return versionName;
+    }
+
     /**
      * 删除文件
      *

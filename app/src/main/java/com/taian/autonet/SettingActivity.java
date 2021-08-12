@@ -32,7 +32,9 @@ public class SettingActivity extends BaseActivity {
         final EditText portEt = findViewById(R.id.port);
         final EditText ipEt = findViewById(R.id.ip);
         TextView mac = findViewById(R.id.mac);
+        TextView version = findViewById(R.id.version);
         mac.setText(getString(R.string.mac, AppApplication.getMacAdress()));
+        version.setText(getString(R.string.current_version, Utils.getVersionName(this)));
 
         findViewById(R.id.save).setOnClickListener(new View.OnClickListener() {
             @Override

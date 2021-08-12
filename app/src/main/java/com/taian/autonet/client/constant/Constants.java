@@ -38,4 +38,6 @@ public interface Constants {
     int PM = 1;
 
     int ERROR = -2;
+
+    int MAX_DOWNLOAD_NUM = 1;
 }

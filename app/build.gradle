@@ -90,4 +90,6 @@ dependencies {
     implementation 'xyz.doikki.android.dkplayer:player-ijk:3.3.4'
     implementation files('libs/netty-tcp-4.1.33-1.0.jar')
     implementation project(':installerlibrary')
+    implementation 'me.laoyuyu.aria:core:3.8.16'
+    annotationProcessor 'me.laoyuyu.aria:compiler:3.8.16'
 }

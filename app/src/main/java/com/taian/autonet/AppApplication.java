@@ -6,6 +6,7 @@ import android.os.Process;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.arialyy.aria.core.Aria;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.utils.SpUtils;
 import com.taian.autonet.client.utils.Utils;
@@ -40,6 +41,7 @@ public class AppApplication extends Application {
                 //使用使用IjkPlayer解码
                 .setPlayerFactory(IjkPlayerFactory.create())
                 .build());
+        Aria.get(this).getDownloadConfig().setMaxTaskNum(Constants.MAX_DOWNLOAD_NUM);
     }
 
     public static String getMacAdress() {
