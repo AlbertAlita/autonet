@@ -17,6 +17,7 @@ import com.arialyy.annotations.Download;
 import com.arialyy.aria.core.Aria;
 import com.arialyy.aria.core.download.DownloadEntity;
 import com.arialyy.aria.core.task.DownloadTask;
+import com.arialyy.aria.util.CommonUtil;
 import com.taian.autonet.client.Config;
 import com.taian.autonet.client.NettyTcpClient;
 import com.taian.autonet.client.constant.Constants;
@@ -203,13 +204,26 @@ public class SplashActivity extends BaseActivity {
         Aria.download(this)
                 .load(url) // 下载地址
                 .setFilePath(AppApplication.COMPLETE_CACHE_PATH + File.separator + Constants.APP_APK_NAME) // 设置文件保存路径
+                .ignoreFilePathOccupy()
                 .create();
     }
 
     @Download.onWait
     public void onWait(DownloadTask task) {
-        DownloadEntity entity = task.getEntity();
+
+    }
+
+    @Download.onPre
+    public void onPre(DownloadTask task) {
+//        DownloadEntity entity = task.getEntity();
+
+    }
+
+    @Download.onTaskStart
+    public void onTaskStart(DownloadTask task) {
+        DownloadEntity entity = task.getDownloadEntity();
         long fileSize = entity.getFileSize();
+
         if (Config.LOG_TOGGLE) Log.e(getClass().getSimpleName(), fileSize + "fileSize");
         int haveSpace = Utils.haveSpace(fileSize);
         if (haveSpace == -1) {
@@ -228,33 +242,24 @@ public class SplashActivity extends BaseActivity {
                 showErrorDialog(getString(R.string.insufficient_disk_space));
             }
         }
-    }
-
-    @Download.onPre
-    public void onPre(DownloadTask task) {
-        showProgressDialog("资源连接中...", 0, "0");
-    }
-
-    @Download.onTaskStart
-    public void onTaskStart(DownloadTask task) {
 
     }
 
     @Download.onTaskRunning
     public void onTaskRunning(DownloadTask task) {
-        DownloadEntity entity = task.getEntity();
-        if (Config.LOG_TOGGLE) Log.e(getClass().getSimpleName(), entity.getConvertSpeed());
-        showProgressDialog(getString(R.string.system_upgrading), entity.getPercent(), entity.getConvertSpeed());
+        DownloadEntity entity = task.getDownloadEntity();
+        long speed = entity.getSpeed();
+        if (Config.LOG_TOGGLE) Log.e(getClass().getSimpleName(), "speed" + speed);
+        showProgressDialog(getString(R.string.system_upgrading), entity.getPercent(),
+                CommonUtil.formatFileSize(speed < 0 ? 0 : speed) + "/s");
     }
 
     @Download.onTaskFail
     public void onTaskFail(DownloadTask task, Exception e) {
         if (mProgressDialog != null) mProgressDialog.dismiss();
-//        Aria.download(this).load(task.getEntity().getId()).cancel(false);
-        Aria.download(this).load(taskId).resume();
-//        String reason = getString(R.string.upgrading_and_install_failed);
-//        showErrorDialog(e == null ?
-//                reason : reason + "-->" + e.getMessage());
+        String reason = getString(R.string.upgrading_and_install_failed);
+        showErrorDialog(e == null ?
+                reason : reason + "-->" + e.getMessage());
     }
 
     @Download.onTaskComplete
