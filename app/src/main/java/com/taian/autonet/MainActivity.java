@@ -3,15 +3,20 @@ package com.taian.autonet;
 import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.widget.Toast;
 
 
-import com.liulishuo.okdownload.DownloadTask;
+import com.arialyy.annotations.Download;
+import com.arialyy.aria.core.Aria;
+import com.arialyy.aria.core.task.DownloadTask;
+import com.arialyy.aria.util.FileUtil;
 import com.liulishuo.okdownload.SpeedCalculator;
 import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo;
 import com.liulishuo.okdownload.core.cause.EndCause;
 import com.liulishuo.okdownload.core.listener.assist.Listener4SpeedAssistExtend;
 import com.taian.autonet.bean.VideoInfo;
+import com.taian.autonet.client.Config;
 import com.taian.autonet.client.DownloadDelegate;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
@@ -86,20 +91,16 @@ public class MainActivity extends BaseActivity {
                     //播放结束
                     case VideoView.STATE_PLAYBACK_COMPLETED:
                         if (mDownloadDelegate != null) {
-                            BreakpointInfo breakpointInfo = mDownloadDelegate.updateIndex();
-                            if (breakpointInfo == null) realDownload();
+                            mDownloadDelegate.updateIndex();
+                            realDownload();
                         }
                         break;
                     case VideoView.STATE_ERROR:
                         Toast.makeText(MainActivity.this, R.string.video_play_error, Toast.LENGTH_LONG).show();
                         if (mDownloadDelegate != null) {
-                            String videoName = mDownloadDelegate.getCurrentVideo().getVideoName();
-                            boolean deleteFile = Utils.deleteFile(videoName);
-                            if (deleteFile) {
-                                realDownload();
-                            } else {
-                                mVideoView.release();
-                            }
+                            String url = mDownloadDelegate.getCurrentVideo().getVideoPath();
+//                            boolean deleteFile = Utils.deleteFile(videoName);
+                            Aria.download(MainActivity.this).load(url).cancel(true);
                         }
                         break;
                 }
@@ -115,64 +116,72 @@ public class MainActivity extends BaseActivity {
         List<VideoInfo> cachedVideoList = SpUtils.
                 getCachedVideoList(this, Constants.VIDEO_LIST);
         mDownloadDelegate = new DownloadDelegate(cachedVideoList);
+        Aria.download(this).register();
         realDownload();
     }
 
+    @Download.onWait
+    void taskWait(DownloadTask task) {
+        long totalLength = task.getEntity().getFileSize();
+        if (Config.LOG_TOGGLE)
+            Log.e(getClass().getSimpleName(), task.getEntity().toString() + "--- totalLength ----" + totalLength);
+        int haveSpace = Utils.haveSpace(totalLength);
+        if (haveSpace == -1) {
+            List<VideoInfo> cachedVideoList = mDownloadDelegate.getCachedVideoList();
+            List<String> list = new ArrayList<>();
+            for (VideoInfo videoInfo : cachedVideoList) {
+                list.add(AppApplication.COMPLETE_CACHE_PATH + File.separator + videoInfo.getVideoName());
+            }
+            boolean deleteDirectory = Utils.deleteDirectory(AppApplication.COMPLETE_CACHE_PATH, list);
+            Utils.deleteDirectory(AppApplication.COMPLETE_LOG_PATH);
+            task.cancel();
+            if (deleteDirectory) {
+                haveSpace = Utils.haveSpace(totalLength);
+                if (haveSpace == -1)
+                    showErrorDialog(getString(R.string.insufficient_disk_space));
+                else {
+                    realDownload();
+                }
+            } else {
+                showErrorDialog(getString(R.string.insufficient_disk_space));
+            }
+        }
+    }
+
+    @Download.onPre
+    void onPre(DownloadTask task) {
+        long totalLength = task.getEntity().getFileSize();
+        if (Config.LOG_TOGGLE)
+            Log.e(getClass().getSimpleName(), task.getEntity().toString() + "--- totalLength ----" + totalLength);
+    }
+
+    @Download.onTaskStart
+    void taskStart(DownloadTask task) {
+
+    }
+
+    @Download.onTaskRunning
+    void taskRunning(DownloadTask task) {
+        showProgressDialog(getString(R.string.video_downloading), task.getPercent(), task.getConvertSpeed());
+    }
+
+    @Download.onTaskFail
+    void taskFail(DownloadTask task) {
+        try {
+            String errorMsg = task.getTaskWrapper().getErrorEvent().errorMsg;
+            downloadError(errorMsg);
+        } catch (Exception e) {
+            downloadError(getString(R.string.unkown_error_1));
+        }
+    }
+
+    @Download.onTaskComplete
+    void taskComplete(DownloadTask task) {
+        downloadComplete(task);
+    }
+
     private void realDownload() {
-        mDownloadDelegate.startDownloadTask(new CusDownloadListener() {
-
-            @Override
-            public void infoReady(final DownloadTask task, BreakpointInfo info, boolean fromBreakpoint,
-                                  Listener4SpeedAssistExtend.Listener4SpeedModel model) {
-                super.infoReady(task, info, fromBreakpoint, model);
-                mTask = task;
-                int haveSpace = Utils.haveSpace(totalLength);
-                if (haveSpace == -1) {
-                    List<VideoInfo> cachedVideoList = mDownloadDelegate.getCachedVideoList();
-                    List<String> list = new ArrayList<>();
-                    for (VideoInfo videoInfo : cachedVideoList) {
-                        list.add(AppApplication.COMPLETE_CACHE_PATH + File.separator + videoInfo.getVideoName());
-                    }
-                    boolean deleteDirectory = Utils.deleteDirectory(AppApplication.COMPLETE_CACHE_PATH, list);
-                    Utils.deleteDirectory(AppApplication.COMPLETE_LOG_PATH);
-                    task.cancel();
-                    if (deleteDirectory) {
-                        haveSpace = Utils.haveSpace(totalLength);
-                        if (haveSpace == -1)
-                            showErrorDialog(getString(R.string.insufficient_disk_space));
-                        else {
-                            realDownload();
-                        }
-                    } else {
-                        showErrorDialog(getString(R.string.insufficient_disk_space));
-                    }
-                }
-            }
-
-            @Override
-            public void progress(@NonNull DownloadTask task, long currentOffset, @NonNull SpeedCalculator taskSpeed) {
-                super.progress(task, currentOffset, taskSpeed);
-                mTask = task;
-                float percent = (float) currentOffset / totalLength * 100;
-                showProgressDialog(getString(R.string.video_downloading), percent, speed);
-            }
-
-            @Override
-            public void taskEnd(@NonNull final DownloadTask task, @NonNull EndCause cause,
-                                @Nullable Exception realCause, @NonNull SpeedCalculator taskSpeed) {
-                super.taskEnd(task, cause, realCause, taskSpeed);
-                mTask = null;
-                if (cause == null) {
-                    downloadError(getString(R.string.unkown_error_1));
-                    return;
-                }
-                if (cause == EndCause.COMPLETED) {
-                    downloadComplete(task);
-                } else if (cause == EndCause.ERROR) {
-                    downloadError(realCause == null ? getString(R.string.unkown_error_1) : realCause.getMessage());
-                }
-            }
-        });
+        mDownloadDelegate.startDownloadTask(this);
     }
 
     private void downloadComplete(@NonNull DownloadTask task) {
@@ -180,9 +189,9 @@ public class MainActivity extends BaseActivity {
             mProgressDialog.dismiss();
             mProgressDialog = null;
         }
-        String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
+        String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getEntity().getFileName();
         mVideoView.release();
-        mController.getTitleView().setTitle(task.getFilename());
+        mController.getTitleView().setTitle(task.getEntity().getFileName());
         mVideoView.setVideoController(mController); //设置控制器
         mVideoView.setUrl(localPath);
         mVideoView.start();
@@ -278,17 +287,6 @@ public class MainActivity extends BaseActivity {
         if (!mProgressDialog.isShowing()) mProgressDialog.show();
     }
 
-//    @Override
-//    protected void onStop() {
-//        super.onStop();
-//        if (mVideoView != null) {
-//            mVideoView.release();
-//        }
-//        WrapNettyClient.getInstance().disConnect(this);
-//        WrapNettyClient.getInstance().removeListener(getClass().getSimpleName());
-//        ActivityUtil.AppExit(this);
-//        ActivityUtil.finishAllActivity();
-//    }
 
     @Override
     protected void onDestroy() {
@@ -297,6 +295,7 @@ public class MainActivity extends BaseActivity {
             mVideoView.release();
             mVideoView = null;
         }
+        Aria.download(this).unRegister();
         WrapNettyClient.getInstance().disConnect(this);
         WrapNettyClient.getInstance().removeListener(getClass().getSimpleName());
         if (mTask != null) mTask.cancel();

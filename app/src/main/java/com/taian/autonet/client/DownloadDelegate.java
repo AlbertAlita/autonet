@@ -1,7 +1,9 @@
 package com.taian.autonet.client;
 
+import android.app.Activity;
 import android.util.Log;
 
+import com.arialyy.aria.core.Aria;
 import com.liulishuo.okdownload.DownloadListener;
 import com.liulishuo.okdownload.DownloadTask;
 import com.liulishuo.okdownload.StatusUtil;
@@ -31,21 +33,8 @@ public class DownloadDelegate {
         return cachedVideoList == null ? new ArrayList<VideoInfo>() : cachedVideoList;
     }
 
-    public void startDownloadTask(final DownloadListener listener) {
-        if (cachedVideoList == null || cachedVideoList.isEmpty()) return;
-        if (threadPoolUtil == null)
-            threadPoolUtil = new ThreadPoolUtil(ThreadPoolUtil.Type.SingleThread, 1);
-        threadPoolUtil.execute(new Runnable() {
-            @Override
-            public void run() {
-                VideoInfo currentVideo = getCurrentVideo();
-                DownloadTask mTask = new DownloadTask.Builder(currentVideo.getVideoPath(),
-                        AppApplication.COMPLETE_CACHE_PATH, currentVideo.getVideoName())
-                        .setMinIntervalMillisCallbackProcess(64)
-                        .build();
-                mTask.execute(listener);
-            }
-        });
+    public void startDownloadTask(Activity activity) {
+        Aria.download(activity).load(getCurrentVideo().getVideoPath()).create();
     }
 
     public VideoInfo getCurrentVideo() {
@@ -72,7 +61,7 @@ public class DownloadDelegate {
         }
     }
 
-    public BreakpointInfo updateIndex() {
+    public void updateIndex() {
         index += 1;
         if (index > cachedVideoList.size()) index = 1;
         //缺这个编号就跳到下一个
@@ -80,15 +69,6 @@ public class DownloadDelegate {
             index += 1;
             if (index > cachedVideoList.size()) index = 1;
         }
-        BreakpointInfo currentInfo = StatusUtil.getCurrentInfo(getCurrentVideo().getVideoPath(),
-                AppApplication.COMPLETE_CACHE_PATH, getCurrentVideo().getVideoName());
-        if (currentInfo != null) {
-            long totalOffset = currentInfo.getTotalOffset();
-            long totalLength = currentInfo.getTotalLength();
-            if (Config.LOG_TOGGLE)
-                Log.e("TAG", totalOffset + "------" + totalLength);
-        }
-        return currentInfo;
     }
 
     public void reDownload(String url) {
