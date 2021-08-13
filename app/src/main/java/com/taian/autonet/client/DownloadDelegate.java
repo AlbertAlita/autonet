@@ -1,13 +1,11 @@
 package com.taian.autonet.client;
 
 import android.app.Activity;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.arialyy.aria.core.Aria;
-import com.liulishuo.okdownload.DownloadListener;
-import com.liulishuo.okdownload.DownloadTask;
-import com.liulishuo.okdownload.StatusUtil;
-import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo;
+import com.arialyy.aria.core.download.DownloadEntity;
 import com.taian.autonet.AppApplication;
 import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.constant.Constants;
@@ -33,8 +31,28 @@ public class DownloadDelegate {
         return cachedVideoList == null ? new ArrayList<VideoInfo>() : cachedVideoList;
     }
 
-    public void startDownloadTask(Activity activity) {
-        Aria.download(activity).load(getCurrentVideo().getVideoPath()).create();
+    public DownloadEntity startDownloadTask(Activity activity) {
+        String url = getCurrentVideo().getVideoPath();
+        String fileName = getCurrentVideo().getVideoName();
+        List<DownloadEntity> downloadEntities = Aria.download(activity).getAllCompleteTask();
+        DownloadEntity entity = null;
+        if (downloadEntities != null && !downloadEntities.isEmpty()) {
+            for (DownloadEntity downloadEntity : downloadEntities) {
+                if (TextUtils.equals(downloadEntity.getFileName(), fileName) || TextUtils.equals(downloadEntity.getRealUrl(), url)) {
+                    entity = downloadEntity;
+                    break;
+                }
+            }
+            if (entity == null) {
+                Aria.download(activity).load(url).setFilePath(AppApplication.getDefaultRootPath()
+                        + getCurrentVideo().getVideoName()).ignoreFilePathOccupy().create();
+            }
+            return entity;
+        } else {
+            Aria.download(activity).load(url).setFilePath(AppApplication.getDefaultRootPath()
+                    + getCurrentVideo().getVideoName()).ignoreFilePathOccupy().create();
+            return null;
+        }
     }
 
     public VideoInfo getCurrentVideo() {

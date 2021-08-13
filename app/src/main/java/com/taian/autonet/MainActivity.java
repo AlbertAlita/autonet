@@ -9,25 +9,19 @@ import android.widget.Toast;
 
 import com.arialyy.annotations.Download;
 import com.arialyy.aria.core.Aria;
+import com.arialyy.aria.core.download.DownloadEntity;
 import com.arialyy.aria.core.task.DownloadTask;
-import com.arialyy.aria.util.FileUtil;
-import com.liulishuo.okdownload.SpeedCalculator;
-import com.liulishuo.okdownload.core.breakpoint.BreakpointInfo;
-import com.liulishuo.okdownload.core.cause.EndCause;
-import com.liulishuo.okdownload.core.listener.assist.Listener4SpeedAssistExtend;
+import com.arialyy.aria.util.CommonUtil;
 import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.Config;
 import com.taian.autonet.client.DownloadDelegate;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.handler.WrapNettyClient;
-import com.taian.autonet.client.listener.CusDownloadListener;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.net.Net;
 import com.taian.autonet.client.status.ConnectState;
-import com.taian.autonet.client.utils.ActivityUtil;
 import com.taian.autonet.client.utils.CommandUtils;
 import com.taian.autonet.client.utils.SpUtils;
-import com.taian.autonet.client.utils.ThreadPoolUtil;
 import com.taian.autonet.client.utils.Utils;
 import com.taian.autonet.view.StandardVideoController;
 import com.video.netty.protobuf.CommandDataInfo;
@@ -40,7 +34,6 @@ import java.util.List;
 import androidx.appcompat.app.AlertDialog;
 
 import io.reactivex.annotations.NonNull;
-import io.reactivex.annotations.Nullable;
 import xyz.doikki.videoplayer.player.VideoView;
 
 public class MainActivity extends BaseActivity {
@@ -99,8 +92,7 @@ public class MainActivity extends BaseActivity {
                         Toast.makeText(MainActivity.this, R.string.video_play_error, Toast.LENGTH_LONG).show();
                         if (mDownloadDelegate != null) {
                             String url = mDownloadDelegate.getCurrentVideo().getVideoPath();
-//                            boolean deleteFile = Utils.deleteFile(videoName);
-                            Aria.download(MainActivity.this).load(url).cancel(true);
+                            Aria.download(MainActivity.this).load(url).ignoreFilePathOccupy().create();
                         }
                         break;
                 }
@@ -120,8 +112,8 @@ public class MainActivity extends BaseActivity {
         realDownload();
     }
 
-    @Download.onWait
-    void taskWait(DownloadTask task) {
+    @Download.onTaskStart
+    void taskStart(DownloadTask task) {
         long totalLength = task.getEntity().getFileSize();
         if (Config.LOG_TOGGLE)
             Log.e(getClass().getSimpleName(), task.getEntity().toString() + "--- totalLength ----" + totalLength);
@@ -148,21 +140,10 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    @Download.onPre
-    void onPre(DownloadTask task) {
-        long totalLength = task.getEntity().getFileSize();
-        if (Config.LOG_TOGGLE)
-            Log.e(getClass().getSimpleName(), task.getEntity().toString() + "--- totalLength ----" + totalLength);
-    }
-
-    @Download.onTaskStart
-    void taskStart(DownloadTask task) {
-
-    }
-
     @Download.onTaskRunning
     void taskRunning(DownloadTask task) {
-        showProgressDialog(getString(R.string.video_downloading), task.getPercent(), task.getConvertSpeed());
+        long speed = task.getEntity().getSpeed();
+        showProgressDialog(getString(R.string.video_downloading), task.getPercent(), CommonUtil.formatFileSize(speed < 0 ? 0 : speed) + "/s");
     }
 
     @Download.onTaskFail
@@ -177,21 +158,28 @@ public class MainActivity extends BaseActivity {
 
     @Download.onTaskComplete
     void taskComplete(DownloadTask task) {
-        downloadComplete(task);
+        if (Config.LOG_TOGGLE) {
+            Log.e(getClass().getSimpleName(), "--- onTaskComplete ----" + task.getEntity().getFileName());
+        }
+        downloadComplete(task.getEntity());
     }
 
     private void realDownload() {
-        mDownloadDelegate.startDownloadTask(this);
+        DownloadEntity downloadEntity = mDownloadDelegate.startDownloadTask(this);
+        if (Config.LOG_TOGGLE) {
+            Log.e(getClass().getSimpleName(), "--- realDownload ----" + (downloadEntity == null));
+        }
+        if (downloadEntity != null) downloadComplete(downloadEntity);
     }
 
-    private void downloadComplete(@NonNull DownloadTask task) {
+    private void downloadComplete(@NonNull DownloadEntity entity) {
         if (mProgressDialog != null) {
             mProgressDialog.dismiss();
             mProgressDialog = null;
         }
-        String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getEntity().getFileName();
+        String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + entity.getFileName();
         mVideoView.release();
-        mController.getTitleView().setTitle(task.getEntity().getFileName());
+        mController.getTitleView().setTitle(entity.getFileName());
         mVideoView.setVideoController(mController); //设置控制器
         mVideoView.setUrl(localPath);
         mVideoView.start();
