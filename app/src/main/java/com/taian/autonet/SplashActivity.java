@@ -251,10 +251,10 @@ public class SplashActivity extends BaseActivity {
     public void onTaskFail(DownloadTask task, Exception e) {
         if (mProgressDialog != null) mProgressDialog.dismiss();
 //        Aria.download(this).load(task.getEntity().getId()).cancel(false);
-        Aria.download(this).load(taskId).resume();
-//        String reason = getString(R.string.upgrading_and_install_failed);
-//        showErrorDialog(e == null ?
-//                reason : reason + "-->" + e.getMessage());
+//        Aria.download(this).load(taskId).resume();
+        String reason = getString(R.string.upgrading_and_install_failed);
+        showErrorDialog(e == null ?
+                reason : reason + "-->" + e.getMessage());
     }
 
     @Download.onTaskComplete
