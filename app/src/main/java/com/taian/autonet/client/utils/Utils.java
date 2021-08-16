@@ -26,11 +26,16 @@ import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.PrintStream;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Enumeration;
@@ -630,5 +635,43 @@ public class Utils {
         Calendar mCalendar = Calendar.getInstance();
         mCalendar.setTimeInMillis(time);
         return mCalendar.get(Calendar.AM_PM);
+    }
+
+    public static void generateFile(Throwable ex, File file) {
+        try {
+            FileOutputStream fileOutputStream = new FileOutputStream(file, true);
+            PrintStream printStream = new PrintStream(fileOutputStream);
+            ex.printStackTrace(printStream);
+            printStream.flush();
+            printStream.close();
+            fileOutputStream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void writeToFile(Context context,String data) {
+        try {
+            String timeString = new SimpleDateFormat("yyyyMMddHHmmssSSS")
+                    .format(Calendar.getInstance().getTime());
+            File file = new File(Utils.initFolderPath(context, Constants.LOG_PATH),
+                    "节目单信息@" + timeString + ".txt");
+            //if file doesnt exists, then create it
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+            //true = append file
+            FileWriter fileWritter = new FileWriter(file.getName(), true);
+            fileWritter.write(data);
+            fileWritter.close();
+
+            System.out.println("Done");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

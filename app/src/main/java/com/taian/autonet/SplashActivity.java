@@ -113,8 +113,10 @@ public class SplashActivity extends BaseActivity {
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
                     @Override
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
-                        if (Config.LOG_TOGGLE)
+                        if (Config.LOG_TOGGLE) {
                             Log.e("TAG", message.toString());
+//                            Utils.writeToFile(SplashActivity.this, message.toString());
+                        }
                         if (CommandDataInfo.CommandDataInfoMessage.CommandType.PackageConfigType == message.getDataType()) {
                             CommandDataInfo.PackageConfigCommand packageConfigCommand = message.getPackageConfigCommand();
                             if (packageConfigCommand.getResponseCommand().getResponseCode() == Net.SUCCESS) {

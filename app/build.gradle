@@ -42,7 +42,10 @@ android {
         }
     }
 
-
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 protobuf {
@@ -83,10 +86,13 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxjava:2.1.3'
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.1'
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.5@aar'
-    implementation 'xyz.doikki.android.dkplayer:dkplayer-java:3.3.3'
-    implementation 'xyz.doikki.android.dkplayer:player-ijk:3.3.4'
+//    implementation 'xyz.doikki.android.dkplayer:dkplayer-java:3.3.5'
+//    implementation 'xyz.doikki.android.dkplayer:player-ijk:3.3.5'
+//    implementation 'xyz.doikki.android.dkplayer:player-exo:3.3.5'
     implementation files('libs/netty-tcp-4.1.33-1.0.jar')
     implementation project(':installerlibrary')
     implementation 'me.laoyuyu.aria:core:3.8.16'
     annotationProcessor 'me.laoyuyu.aria:compiler:3.8.16'
+    implementation project(':dkplayer-java')
+    implementation project(path: ':dkplayer-players:exo')
 }
