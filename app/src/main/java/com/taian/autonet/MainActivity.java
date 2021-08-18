@@ -7,11 +7,10 @@ import android.util.Log;
 import android.widget.Toast;
 
 
-import com.arialyy.annotations.Download;
-import com.arialyy.aria.core.Aria;
-import com.arialyy.aria.core.download.DownloadEntity;
-import com.arialyy.aria.core.task.DownloadTask;
-import com.arialyy.aria.util.CommonUtil;
+import com.liulishuo.filedownloader.BaseDownloadTask;
+import com.liulishuo.filedownloader.DownloadTask;
+import com.liulishuo.filedownloader.FileDownloadListener;
+import com.liulishuo.filedownloader.FileDownloader;
 import com.taian.autonet.bean.VideoInfo;
 import com.taian.autonet.client.Config;
 import com.taian.autonet.client.DownloadDelegate;
@@ -91,8 +90,7 @@ public class MainActivity extends BaseActivity {
                     case VideoView.STATE_ERROR:
                         Toast.makeText(MainActivity.this, R.string.video_play_error, Toast.LENGTH_LONG).show();
                         if (mDownloadDelegate != null) {
-                            String url = mDownloadDelegate.getCurrentVideo().getVideoPath();
-                            Aria.download(MainActivity.this).load(url).ignoreFilePathOccupy().create();
+                            realDownload();
                         }
                         break;
                 }
@@ -108,78 +106,102 @@ public class MainActivity extends BaseActivity {
         List<VideoInfo> cachedVideoList = SpUtils.
                 getCachedVideoList(this, Constants.VIDEO_LIST);
         mDownloadDelegate = new DownloadDelegate(cachedVideoList);
-        Aria.download(this).register();
         realDownload();
     }
 
-    @Download.onTaskStart
-    void taskStart(DownloadTask task) {
-        long totalLength = task.getEntity().getFileSize();
-        if (Config.LOG_TOGGLE)
-            Log.e(getClass().getSimpleName(), task.getEntity().toString() + "--- totalLength ----" + totalLength);
-        int haveSpace = Utils.haveSpace(totalLength);
-        if (haveSpace == -1) {
-            List<VideoInfo> cachedVideoList = mDownloadDelegate.getCachedVideoList();
-            List<String> list = new ArrayList<>();
-            for (VideoInfo videoInfo : cachedVideoList) {
-                list.add(AppApplication.COMPLETE_CACHE_PATH + File.separator + videoInfo.getVideoName());
-            }
-            boolean deleteDirectory = Utils.deleteDirectory(AppApplication.COMPLETE_CACHE_PATH, list);
-            Utils.deleteDirectory(AppApplication.COMPLETE_LOG_PATH);
-            task.cancel();
-            if (deleteDirectory) {
-                haveSpace = Utils.haveSpace(totalLength);
-                if (haveSpace == -1)
-                    showErrorDialog(getString(R.string.insufficient_disk_space));
-                else {
-                    realDownload();
-                }
-            } else {
-                showErrorDialog(getString(R.string.insufficient_disk_space));
-            }
-        }
-    }
-
-    @Download.onTaskRunning
-    void taskRunning(DownloadTask task) {
-        long speed = task.getEntity().getSpeed();
-        showProgressDialog(getString(R.string.video_downloading), task.getPercent(), CommonUtil.formatFileSize(speed < 0 ? 0 : speed) + "/s");
-    }
-
-    @Download.onTaskFail
-    void taskFail(DownloadTask task) {
-        try {
-            String errorMsg = task.getTaskWrapper().getErrorEvent().errorMsg;
-            downloadError(errorMsg);
-        } catch (Exception e) {
-            downloadError(getString(R.string.unkown_error_1));
-        }
-    }
-
-    @Download.onTaskComplete
-    void taskComplete(DownloadTask task) {
-        if (Config.LOG_TOGGLE) {
-            Log.e(getClass().getSimpleName(), "--- onTaskComplete ----" + task.getEntity().getFileName());
-        }
-        downloadComplete(task.getEntity());
-    }
-
     private void realDownload() {
-        DownloadEntity downloadEntity = mDownloadDelegate.startDownloadTask(this);
-        if (Config.LOG_TOGGLE) {
-            Log.e(getClass().getSimpleName(), "--- realDownload ----" + (downloadEntity == null));
-        }
-        if (downloadEntity != null) downloadComplete(downloadEntity);
+        VideoInfo currentVideo = mDownloadDelegate.getCurrentVideo();
+        FileDownloader.getImpl().create(currentVideo.getVideoPath())
+                .setPath(AppApplication.getDefaultRootPath() + currentVideo.getVideoName())
+//                .setForceReDownload(true)
+                .setListener(new FileDownloadListener() {
+                    @Override
+                    protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                        //等待，已经进入下载队列 数据库中的soFarBytes与totalBytes
+//                        showProgressDialog(getString(R.string.linking_res), 0, "0");
+                        if (Config.LOG_TOGGLE)
+                            Log.e(MainActivity.this.getClass().getSimpleName(), task.toString() + task.getFilename() + "--- pending ----" + totalBytes);
+                        if (!new File(AppApplication.getDefaultRootPath() + task.getFilename()).exists()) {
+                            FileDownloader.getImpl().clear(task.getId(), task.getTargetFilePath());
+                            realDownload();
+                        }
+                    }
+
+                    @Override
+                    protected void connected(BaseDownloadTask task, String etag, boolean isContinue, int soFarBytes, int totalBytes) {
+                        //已经连接上,ETag, 是否断点续传, soFarBytes, totalBytes
+
+                        int haveSpace = Utils.haveSpace(totalBytes);
+                        if (haveSpace == -1) {
+                            task.pause();
+                            Utils.deleteDirectory(AppApplication.COMPLETE_CACHE_PATH, false);
+                            if (Config.LOG_TOGGLE)
+                                Log.e(MainActivity.this.getClass().getSimpleName(), "--- connected ----" + totalBytes);
+                            FileDownloader.getImpl().clearAllTaskData();
+                            haveSpace = Utils.haveSpace(totalBytes);
+                            if (haveSpace == -1)
+                                showErrorDialog(getString(R.string.insufficient_disk_space));
+                            else {
+                                realDownload();
+                            }
+                        }
+                    }
+
+                    @Override
+                    protected void progress(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                        int speed = task.getSpeed();
+                        if (Config.LOG_TOGGLE)
+                            Log.e(MainActivity.this.getClass().getSimpleName(), "--- progress ----" + speed);
+                        float precent = (float) soFarBytes / (float) totalBytes * 100;
+                        showProgressDialog(getString(R.string.video_downloading), precent,
+                                Utils.formatFileSize(speed < 0 ? 0 : speed) + "/s");
+                    }
+
+                    @Override
+                    protected void completed(BaseDownloadTask task) {
+                        if (Config.LOG_TOGGLE)
+                            Log.e(MainActivity.this.getClass().getSimpleName(), task.toString() + "--- completed ----");
+                        downloadComplete(task);
+                    }
+
+                    @Override
+                    protected void paused(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                        if (Config.LOG_TOGGLE)
+                            Log.e(MainActivity.this.getClass().getSimpleName(), task.toString() + "--- paused ----");
+                    }
+
+                    @Override
+                    protected void error(BaseDownloadTask task, Throwable ex) {
+                        if (Config.LOG_TOGGLE)
+                            Log.e(MainActivity.this.getClass().getSimpleName(), task.toString() + "--- error ----");
+                        try {
+                            Throwable errorCause = task.getErrorCause();
+                            String errorMsg = errorCause.getMessage();
+                            downloadError(errorMsg);
+                        } catch (Exception e) {
+                            downloadError(getString(R.string.unkown_error_1));
+                        }
+                    }
+
+                    @Override
+                    protected void warn(BaseDownloadTask task) {
+                        if (Config.LOG_TOGGLE)
+                            Log.e(MainActivity.this.getClass().getSimpleName(), task.toString() + "--- error ----");
+                    }
+
+                }).start();
+
     }
 
-    private void downloadComplete(@NonNull DownloadEntity entity) {
+
+    private void downloadComplete(@NonNull BaseDownloadTask entity) {
         if (mProgressDialog != null) {
             mProgressDialog.dismiss();
             mProgressDialog = null;
         }
-        String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + entity.getFileName();
+        String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + entity.getFilename();
         mVideoView.release();
-        mController.getTitleView().setTitle(entity.getFileName());
+        mController.getTitleView().setTitle(entity.getFilename());
         mVideoView.setVideoController(mController); //设置控制器
         mVideoView.setUrl(localPath);
         mVideoView.start();
@@ -283,7 +305,6 @@ public class MainActivity extends BaseActivity {
             mVideoView.release();
             mVideoView = null;
         }
-        Aria.download(this).unRegister();
         WrapNettyClient.getInstance().disConnect(this);
         WrapNettyClient.getInstance().removeListener(getClass().getSimpleName());
         if (mTask != null) mTask.cancel();

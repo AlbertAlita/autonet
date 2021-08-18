@@ -13,12 +13,10 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.arialyy.annotations.Download;
-import com.arialyy.aria.core.Aria;
-import com.arialyy.aria.core.download.DTaskWrapper;
-import com.arialyy.aria.core.download.DownloadEntity;
-import com.arialyy.aria.core.task.DownloadTask;
-import com.arialyy.aria.util.CommonUtil;
+import com.liulishuo.filedownloader.BaseDownloadTask;
+import com.liulishuo.filedownloader.DownloadTask;
+import com.liulishuo.filedownloader.FileDownloadListener;
+import com.liulishuo.filedownloader.FileDownloader;
 import com.taian.autonet.client.Config;
 import com.taian.autonet.client.NettyTcpClient;
 import com.taian.autonet.client.constant.Constants;
@@ -32,6 +30,7 @@ import com.taian.autonet.client.utils.Utils;
 import com.video.netty.protobuf.CommandDataInfo;
 
 import java.io.File;
+import java.util.List;
 
 import androidx.appcompat.app.AlertDialog;
 
@@ -203,104 +202,96 @@ public class SplashActivity extends BaseActivity {
     }
 
     private void startDownload(final String url) {
-        Aria.download(this).register();
-        Aria.download(this)
-                .load(url) // 下载地址
-                .setFilePath(AppApplication.COMPLETE_CACHE_PATH + File.separator + Constants.APP_APK_NAME) // 设置文件保存路径
-                .ignoreFilePathOccupy()
-                .create();
-    }
+        FileDownloader.getImpl().create(url)
+                .setPath(AppApplication.COMPLETE_CACHE_PATH + File.separator + Constants.APP_APK_NAME)
+                .setForceReDownload(true)
+                .setListener(new FileDownloadListener() {
+                    @Override
+                    protected void connected(BaseDownloadTask task, String etag, boolean isContinue, int soFarBytes, int totalBytes) {
+                        int haveSpace = Utils.haveSpace(totalBytes);
+                        if (haveSpace == -1) {
+                            task.pause();
+                            Utils.deleteDirectory(AppApplication.COMPLETE_CACHE_PATH, false);
+                            if (Config.LOG_TOGGLE)
+                                Log.e(SplashActivity.this.getClass().getSimpleName(), "--- connected ----" + totalBytes);
+                            FileDownloader.getImpl().clearAllTaskData();
+                            haveSpace = Utils.haveSpace(totalBytes);
+                            if (haveSpace == -1)
+                                showErrorDialog(getString(R.string.insufficient_disk_space));
+                            else {
+                                startDownload(url);
+                            }
+                        }
+                    }
 
-    @Download.onWait
-    public void onWait(DownloadTask task) {
+                    @Override
+                    protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
 
-    }
+                    }
 
-    @Download.onPre
-    public void onPre(DownloadTask task) {
-//        DownloadEntity entity = task.getEntity();
+                    @Override
+                    protected void progress(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                        int speed = task.getSpeed();
+                        float precent = (float) soFarBytes / (float) totalBytes * 100;
+                        showProgressDialog(getString(R.string.system_upgrading), precent,
+                                Utils.formatFileSize(speed < 0 ? 0 : speed) + "/s");
+                    }
 
-    }
+                    @Override
+                    protected void completed(BaseDownloadTask task) {
+                        String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
+                        AutoInstaller installer = AutoInstaller.getDefault(SplashActivity.this);
+                        installer.install(localPath);
+                        installer.setOnStateChangedListener(new AutoInstaller.OnStateChangedListener() {
+                            @Override
+                            public void onStart() {
+                                showProgressBar(getString(R.string.apk_installing));
+                            }
 
-    @Download.onTaskStart
-    public void onTaskStart(DownloadTask task) {
-        DownloadEntity entity = task.getDownloadEntity();
-        long fileSize = entity.getFileSize();
+                            @Override
+                            public void onComplete() {
+                                hideProgressBar();
+                                if (Config.LOG_TOGGLE) Log.e("TAG", task.getFilename());
+                                Intent intent = new Intent(Constants.RE_BOOT);
+                                sendBroadcast(intent);
+                                hideProgressBar();
+                            }
 
-        if (Config.LOG_TOGGLE) Log.e(getClass().getSimpleName(), fileSize + "fileSize");
-        int haveSpace = Utils.haveSpace(fileSize);
-        if (haveSpace == -1) {
-            boolean deleteDirectory = Utils.deleteDirectory(AppApplication.COMPLETE_CACHE_PATH);
-            Utils.deleteDirectory(AppApplication.COMPLETE_LOG_PATH);
-            task.cancel();
-            if (deleteDirectory) {
-                haveSpace = Utils.haveSpace(fileSize);
-                if (haveSpace == -1) {
-                    showErrorDialog(getString(R.string.insufficient_disk_space));
-                    Aria.download(this).load(entity.getId()).stop();
-                } else {
-                    Aria.download(this).load(entity.getId()).resume();
-                }
-            } else {
-                showErrorDialog(getString(R.string.insufficient_disk_space));
-            }
-        }
+                            @Override
+                            public void onNeed2OpenService() {
+                                hideProgressBar();
+                                Toast.makeText(SplashActivity.this, "请打开辅助功能服务", Toast.LENGTH_SHORT).show();
+                            }
 
-    }
+                            @Override
+                            public void needPermission() {
+                                hideProgressBar();
+                                Toast.makeText(SplashActivity.this, "需要申请存储空间权限", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
 
-    @Download.onTaskRunning
-    public void onTaskRunning(DownloadTask task) {
-        DownloadEntity entity = task.getDownloadEntity();
-        long speed = entity.getSpeed();
-        if (Config.LOG_TOGGLE) Log.e(getClass().getSimpleName(), "speed" + speed);
-        showProgressDialog(getString(R.string.system_upgrading), entity.getPercent(),
-                CommonUtil.formatFileSize(speed < 0 ? 0 : speed) + "/s");
-    }
+                    @Override
+                    protected void paused(BaseDownloadTask task, int soFarBytes, int totalBytes) {
 
-    @Download.onTaskFail
-    public void onTaskFail(DownloadTask task, Exception e) {
-        if (mProgressDialog != null) mProgressDialog.dismiss();
-        String reason = getString(R.string.upgrading_and_install_failed);
-        DTaskWrapper taskWrapper = task.getTaskWrapper();
-        showErrorDialog(taskWrapper == null ?
-                reason : reason + "-->" + taskWrapper.getErrorEvent().errorMsg);
-    }
+                    }
 
-    @Download.onTaskComplete
-    public void onTaskComplete(final DownloadTask task) {
-        if (mProgressDialog != null) mProgressDialog.dismiss();
-        final DownloadEntity entity = task.getEntity();
-        String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + entity.getFileName();
-        AutoInstaller installer = AutoInstaller.getDefault(SplashActivity.this);
-        installer.install(localPath);
-        installer.setOnStateChangedListener(new AutoInstaller.OnStateChangedListener() {
-            @Override
-            public void onStart() {
-                showProgressBar(getString(R.string.apk_installing));
-            }
+                    @Override
+                    protected void error(BaseDownloadTask task, Throwable ex) {
+                        try {
+                            Throwable errorCause = task.getErrorCause();
+                            String errorMsg = errorCause.getMessage();
+                            showErrorDialog(errorMsg);
+                        } catch (Exception e) {
+                            showErrorDialog(getString(R.string.unkown_error_1));
+                        }
+                    }
 
-            @Override
-            public void onComplete() {
-                hideProgressBar();
-                if (Config.LOG_TOGGLE) Log.e("TAG", entity.getFileName());
-                Aria.download(SplashActivity.this).load(task.getEntity().getId()).cancel(true);
-                Intent intent = new Intent(Constants.RE_BOOT);
-                sendBroadcast(intent);
-                hideProgressBar();
-            }
+                    @Override
+                    protected void warn(BaseDownloadTask task) {
 
-            @Override
-            public void onNeed2OpenService() {
-                hideProgressBar();
-                Toast.makeText(SplashActivity.this, "请打开辅助功能服务", Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void needPermission() {
-                hideProgressBar();
-                Toast.makeText(SplashActivity.this, "需要申请存储空间权限", Toast.LENGTH_SHORT).show();
-            }
-        });
+                    }
+                }).start();
     }
 
     private void otherOpt() {
@@ -368,8 +359,6 @@ public class SplashActivity extends BaseActivity {
         super.onDestroy();
         if (errorDiaolog != null) errorDiaolog.dismiss();
         WrapNettyClient.getInstance().removeListener(SplashActivity.class.getSimpleName());
-        Aria.download(this).load(taskId).cancel(true);
-        Aria.download(this).unRegister();
         if (mHandler != null) {
             mHandler.removeCallbacksAndMessages(null);
             mHandler = null;

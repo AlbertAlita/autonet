@@ -6,7 +6,7 @@ import android.os.Process;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.arialyy.aria.core.Aria;
+import com.liulishuo.filedownloader.FileDownloader;
 import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.utils.SpUtils;
 import com.taian.autonet.client.utils.Utils;
@@ -36,7 +36,8 @@ public class AppApplication extends Application {
         VideoViewManager.setConfig(VideoViewConfig.newBuilder()
                 .setPlayerFactory(ExoMediaPlayerFactory.create())
                 .build());
-        Aria.get(this).getDownloadConfig().setMaxTaskNum(Constants.MAX_DOWNLOAD_NUM);
+//        Aria.get(this).getDownloadConfig().setMaxTaskNum(Constants.MAX_DOWNLOAD_NUM);
+        FileDownloader.setup(this);
     }
 
     public static String getMacAdress() {

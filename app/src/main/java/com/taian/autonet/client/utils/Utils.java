@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintStream;
+import java.math.BigDecimal;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
@@ -244,10 +245,10 @@ public class Utils {
      * @param fileName
      * @return
      */
-    public static boolean deleteFile(String fileName) {
+    public static boolean deleteFile(String path) {
         boolean status;
         SecurityManager checker = new SecurityManager();
-        File file = new File(AppApplication.COMPLETE_CACHE_PATH + File.separator + fileName);
+        File file = new File(path);
 
         if (file.exists()) {
             checker.checkDelete(file.toString());
@@ -469,6 +470,37 @@ public class Utils {
      * @param filePath 被删除目录的文件路径
      * @return 目录删除成功返回true，否则返回false
      */
+    public static boolean deleteDirectory(String filePath, boolean isDeleteDir) {
+        boolean flag = false;
+        //如果filePath不以文件分隔符结尾，自动添加文件分隔符
+        if (!filePath.endsWith(File.separator)) {
+            filePath = filePath + File.separator;
+        }
+        File dirFile = new File(filePath);
+        if (!dirFile.exists() || !dirFile.isDirectory()) {
+            return false;
+        }
+        flag = true;
+        File[] files = dirFile.listFiles();
+        //遍历删除文件夹下的所有文件(包括子目录)
+        for (int i = 0; i < files.length; i++) {
+            if (files[i].isFile()) {
+                //删除子文件
+                flag = deleteFile(files[i].getAbsolutePath());
+                if (!flag) break;
+            } else {
+                //删除子目录
+                flag = deleteDirectory(files[i].getAbsolutePath());
+                if (!flag) break;
+            }
+        }
+        if (!flag) return false;
+        //删除当前空目录
+        if (isDeleteDir)
+            return dirFile.delete();
+        else return true;
+    }
+
     public static boolean deleteDirectory(String filePath) {
         boolean flag = false;
         //如果filePath不以文件分隔符结尾，自动添加文件分隔符
@@ -652,26 +684,39 @@ public class Utils {
         }
     }
 
-    public static void writeToFile(Context context,String data) {
-        try {
-            String timeString = new SimpleDateFormat("yyyyMMddHHmmssSSS")
-                    .format(Calendar.getInstance().getTime());
-            File file = new File(Utils.initFolderPath(context, Constants.LOG_PATH),
-                    "节目单信息@" + timeString + ".txt");
-            //if file doesnt exists, then create it
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-
-            //true = append file
-            FileWriter fileWritter = new FileWriter(file.getName(), true);
-            fileWritter.write(data);
-            fileWritter.close();
-
-            System.out.println("Done");
-
-        } catch (IOException e) {
-            e.printStackTrace();
+    /**
+     * 格式化文件大小
+     *
+     * @param size file.length() 获取文件大小
+     */
+    public static String formatFileSize(double size) {
+        if (size < 0) {
+            return "0Kb";
         }
+        double kiloByte = size;
+//        if (kiloByte < 1) {
+//            return size + "B";
+//        }
+
+        double megaByte = kiloByte / 1024;
+//        if (megaByte < 1) {
+//            BigDecimal result1 = new BigDecimal(Double.toString(kiloByte));
+//            return result1.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "0Kb";
+//        }
+
+        double gigaByte = megaByte / 1024;
+        if (gigaByte < 1) {
+            BigDecimal result2 = new BigDecimal(Double.toString(megaByte));
+            return result2.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "MB";
+        }
+
+        double teraBytes = gigaByte / 1024;
+        if (teraBytes < 1) {
+            BigDecimal result3 = new BigDecimal(Double.toString(gigaByte));
+            return result3.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "GB";
+        }
+        BigDecimal result4 = new BigDecimal(teraBytes);
+        return result4.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "TB";
     }
+
 }
