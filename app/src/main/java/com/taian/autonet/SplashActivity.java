@@ -46,10 +46,6 @@ public class SplashActivity extends BaseActivity {
     private CommandDataInfo.PackageConfigCommand packageConfigCommand;
     private ProgressDialog mProgressDialog;
     private AlertDialog errorDiaolog;
-    private ThreadPoolUtil threadPoolUtil;
-    private DownloadTask task;
-    private int state;
-    private long taskId;
 
     public interface Const {
         int FOR_NEW_IP = 0x01;
@@ -239,6 +235,7 @@ public class SplashActivity extends BaseActivity {
 
                     @Override
                     protected void completed(BaseDownloadTask task) {
+                        if (mProgressDialog != null) mProgressDialog.dismiss();
                         String localPath = AppApplication.COMPLETE_CACHE_PATH + File.separator + task.getFilename();
                         AutoInstaller installer = AutoInstaller.getDefault(SplashActivity.this);
                         installer.install(localPath);
