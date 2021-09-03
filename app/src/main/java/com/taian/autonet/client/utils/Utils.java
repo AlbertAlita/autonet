@@ -719,4 +719,23 @@ public class Utils {
         return result4.setScale(2, BigDecimal.ROUND_HALF_UP).toPlainString() + "TB";
     }
 
+    public static void TextToFile(File fileText, String strBuffer) {
+        FileWriter fileWriter = null;
+
+        try {
+            fileWriter = new FileWriter(fileText);
+            fileWriter.write(strBuffer);
+        } catch (IOException var13) {
+            var13.printStackTrace();
+        } finally {
+            try {
+                fileWriter.flush();
+                fileWriter.close();
+            } catch (IOException var12) {
+                var12.printStackTrace();
+            }
+
+        }
+
+    }
 }

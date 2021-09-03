@@ -2,6 +2,7 @@ package xyz.doikki.videoplayer.exo;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
+import android.os.Environment;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
@@ -24,6 +25,15 @@ import com.google.android.exoplayer2.util.Clock;
 import com.google.android.exoplayer2.util.EventLogger;
 import com.google.android.exoplayer2.video.VideoSize;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Map;
 
 import xyz.doikki.videoplayer.player.AbstractPlayer;
@@ -273,6 +283,25 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
 
     @Override
     public void onPlayerError(ExoPlaybackException error) {
+        StringWriter sw = new StringWriter();
+        error.printStackTrace(new PrintWriter(sw));
+        System.err.println(sw);
+        String timeString = new SimpleDateFormat("yyyyMMddHHmmssSSS")
+                .format(Calendar.getInstance().getTime());
+        File file = new File(initFolderPath("log"),
+                "视频遇到错误日志@" + timeString + ".log");
+        try {
+            FileOutputStream fileOutputStream = new FileOutputStream(file, true);
+            PrintStream printStream = new PrintStream(fileOutputStream);
+            error.printStackTrace(printStream);
+            printStream.flush();
+            printStream.close();
+            fileOutputStream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         if (mPlayerEventListener != null) {
             mPlayerEventListener.onError();
         }
@@ -286,5 +315,31 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
                 mPlayerEventListener.onInfo(MEDIA_INFO_VIDEO_ROTATION_CHANGED, videoSize.unappliedRotationDegrees);
             }
         }
+    }
+
+    public static String initFolderPath(String folder) {
+        String filePath = "";
+        if (isSDCardExist()) {
+            filePath = Environment.getExternalStorageDirectory().toString() + "/autonet/" + folder;
+            File directory = new File(filePath);
+            try {
+                if (!directory.exists()) directory.mkdirs();
+            } catch (Exception e) {
+
+            }
+        } else {
+            filePath = Environment.getDownloadCacheDirectory().toString() + "/autonet/" + folder;
+            File directory = new File(filePath);
+            try {
+                if (!directory.exists()) directory.mkdirs();
+            } catch (Exception e) {
+
+            }
+        }
+        return filePath;
+    }
+
+    public static boolean isSDCardExist() {
+        return Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
     }
 }

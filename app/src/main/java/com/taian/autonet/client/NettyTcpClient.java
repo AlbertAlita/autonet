@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 
 import com.google.protobuf.GeneratedMessageV3;
+import com.taian.autonet.AppApplication;
 import com.taian.autonet.client.handler.NettyClientHandler;
 import com.taian.autonet.client.listener.MessageStateListener;
 import com.taian.autonet.client.listener.NettyClientListener;
@@ -79,7 +80,7 @@ public class NettyTcpClient {
     /**
      * 是否发送心跳
      */
-    private boolean isSendheartBeat = false;
+    private boolean isSendheartBeat = true;
 
     /**
      * 心跳数据，可以是String类型，也可以是byte[].
@@ -177,7 +178,7 @@ public class NettyTcpClient {
                             public void initChannel(SocketChannel ch) throws Exception {
                                 ChannelPipeline pipeline = ch.pipeline();
                                 if (isSendheartBeat) {
-                                    pipeline.addLast("ping", new IdleStateHandler(0, heartBeatInterval,
+                                    pipeline.addLast(AppApplication.getMacAdress(), new IdleStateHandler(0, heartBeatInterval,
                                             0, TimeUnit.SECONDS));//5s未发送数据，回调userEventTriggered
                                 }
 

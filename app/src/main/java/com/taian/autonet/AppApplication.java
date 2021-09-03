@@ -69,7 +69,7 @@ public class AppApplication extends Application {
                     StringWriter sw = new StringWriter();
                     ex.printStackTrace(new PrintWriter(sw));
                     System.err.println(sw);
-                    String timeString = new SimpleDateFormat("yyyyMMddHHmmssSSS")
+                    String timeString = new SimpleDateFormat("yyyyMMddHHmmss")
                             .format(Calendar.getInstance().getTime());
                     File file = new File(Utils.initFolderPath(globleContext, Constants.LOG_PATH),
                             "crash@" + timeString + ".log");

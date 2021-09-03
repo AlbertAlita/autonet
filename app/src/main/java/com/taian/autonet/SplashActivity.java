@@ -30,6 +30,8 @@ import com.taian.autonet.client.utils.Utils;
 import com.video.netty.protobuf.CommandDataInfo;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.List;
 
 import androidx.appcompat.app.AlertDialog;
@@ -50,6 +52,8 @@ public class SplashActivity extends BaseActivity {
     public interface Const {
         int FOR_NEW_IP = 0x01;
         int DELAYED_OPT = 0x02;
+        int DELAYED_RECONNECT = 0x03;
+        int DELAYED_REBOOT = 0x04;
     }
 
     @Override
@@ -93,16 +97,29 @@ public class SplashActivity extends BaseActivity {
                                 checkApkInfoAndSaveDataAndSkipToLogin();
                             }
                             break;
+                        case Const.DELAYED_RECONNECT:
+                            if (!SplashActivity.this.isFinishing()) {
+                                WrapNettyClient.getInstance().disConnect(SplashActivity.this);
+                                WrapNettyClient.getInstance().connect(NettyTcpClient.reconnectIntervalTime);
+                            }
+                            break;
+                        case Const.DELAYED_REBOOT:
+                            if (!SplashActivity.this.isFinishing()) {
+                                Intent intent = new Intent(Constants.RE_BOOT);
+                                sendBroadcast(intent);
+                            }
+                            break;
                     }
                 }
             };
         mHandler.sendEmptyMessageDelayed(Const.DELAYED_OPT, 3000);
+        mHandler.sendEmptyMessageDelayed(Const.DELAYED_RECONNECT, 5000);
+        mHandler.sendEmptyMessageDelayed(Const.DELAYED_REBOOT, 10000);
     }
 
     private void connectServerAndGetBaiscInfo() {
-        int activeListener = WrapNettyClient.getInstance().getActiveListener();
-        Log.e(getClass().getSimpleName(), activeListener + "");
-        if (activeListener != 0) WrapNettyClient.getInstance().disConnect(this);
+//        int activeListener = WrapNettyClient.getInstance().getActiveListener();
+//        if (activeListener != 0) WrapNettyClient.getInstance().disConnect(this);
         WrapNettyClient.getInstance().connect(NettyTcpClient.reconnectIntervalTime);
         WrapNettyClient.getInstance().addNettyClientListener(SplashActivity.class.getSimpleName(),
                 new NettyClientListener<CommandDataInfo.CommandDataInfoMessage>() {
@@ -110,7 +127,11 @@ public class SplashActivity extends BaseActivity {
                     public void onMessageResponseClient(CommandDataInfo.CommandDataInfoMessage message, int index) {
                         if (Config.LOG_TOGGLE) {
                             Log.e("TAG", message.toString());
-//                            Utils.writeToFile(SplashActivity.this, message.toString());
+                            File file = new File(Utils.initFolderPath(null, Constants.LOG_PATH),
+                                    "节目单" + ".log");
+                            String timeString = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                                    .format(Calendar.getInstance().getTime());
+                            Utils.TextToFile(file, timeString + "---------" + message.toString());
                         }
                         if (CommandDataInfo.CommandDataInfoMessage.CommandType.PackageConfigType == message.getDataType()) {
                             CommandDataInfo.PackageConfigCommand packageConfigCommand = message.getPackageConfigCommand();
@@ -151,10 +172,10 @@ public class SplashActivity extends BaseActivity {
                             int brakeValue = brakeCommand.getBrakeValue();
                             CommandUtils.startOrShutDownDevice(SplashActivity.this, brakeValue);
                         } else if (CommandDataInfo.CommandDataInfoMessage.CommandType.BrakeTimingType == message.getDataType()) {
-                            CommandDataInfo.BrakeTimingCommand brakeCommand = message.getBrakeTimingCommand();
-                            boolean isSuccess = CommandUtils.powerOnOffByAlarm(SplashActivity.this, brakeCommand);
-                            if (isSuccess)
-                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
+//                            CommandDataInfo.BrakeTimingCommand brakeCommand = message.getBrakeTimingCommand();
+//                            boolean isSuccess = CommandUtils.powerOnOffByAlarm(SplashActivity.this, brakeCommand);
+//                            if (isSuccess)
+//                                WrapNettyClient.getInstance().responseServer(Net.BRAKE_TIME_SUCCESS);
                         }
                     }
 
@@ -248,7 +269,7 @@ public class SplashActivity extends BaseActivity {
                             @Override
                             public void onComplete() {
                                 hideProgressBar();
-                                if (Config.LOG_TOGGLE) Log.e("TAG", task.getFilename());
+//                                if (Config.LOG_TOGGLE) Log.e("TAG", task.getFilename());
                                 Intent intent = new Intent(Constants.RE_BOOT);
                                 sendBroadcast(intent);
                                 hideProgressBar();

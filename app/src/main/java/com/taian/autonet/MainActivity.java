@@ -27,7 +27,6 @@ import com.video.netty.protobuf.CommandDataInfo;
 
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import androidx.appcompat.app.AlertDialog;
@@ -90,6 +89,7 @@ public class MainActivity extends BaseActivity {
                     case VideoView.STATE_ERROR:
                         Toast.makeText(MainActivity.this, R.string.video_play_error, Toast.LENGTH_LONG).show();
                         if (mDownloadDelegate != null) {
+                            mDownloadDelegate.updateIndex();
                             realDownload();
                         }
                         break;
@@ -111,14 +111,14 @@ public class MainActivity extends BaseActivity {
 
     private void realDownload() {
         VideoInfo currentVideo = mDownloadDelegate.getCurrentVideo();
+        if (Config.LOG_TOGGLE)
+            Log.e(getClass().getSimpleName(), "realDownload: " + currentVideo.getVideoName() + "---" + currentVideo.getVideoPath() + "---" +currentVideo.getVideoNumber());
         FileDownloader.getImpl().create(currentVideo.getVideoPath())
                 .setPath(AppApplication.getDefaultRootPath() + currentVideo.getVideoName())
-//                .setForceReDownload(true)
                 .setListener(new FileDownloadListener() {
                     @Override
                     protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
                         //等待，已经进入下载队列 数据库中的soFarBytes与totalBytes
-//                        showProgressDialog(getString(R.string.linking_res), 0, "0");
                         if (Config.LOG_TOGGLE)
                             Log.e(MainActivity.this.getClass().getSimpleName(), task.toString() + task.getFilename() + "--- pending ----" + totalBytes);
                         if (!new File(AppApplication.getDefaultRootPath() + task.getFilename()).exists()) {

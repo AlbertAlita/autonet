@@ -6,10 +6,15 @@ import android.util.Log;
 
 import com.taian.autonet.AppApplication;
 import com.taian.autonet.client.NettyTcpClient;
+import com.taian.autonet.client.constant.Constants;
 import com.taian.autonet.client.listener.NettyClientListener;
 import com.taian.autonet.client.status.ConnectState;
+import com.taian.autonet.client.utils.Utils;
 import com.video.netty.protobuf.CommandDataInfo;
 
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Random;
 
 import io.netty.buffer.ByteBuf;
@@ -57,12 +62,19 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent event = (IdleStateEvent) evt;
+            File file = new File(Utils.initFolderPath(null, Constants.LOG_PATH),
+                    "heartbeat" + ".log");
+            String timeString = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                    .format(Calendar.getInstance().getTime());
             if (event.state() == IdleState.WRITER_IDLE) {   //发送心跳
                 if (isSendheartBeat) {
+                    Log.e("userEventTriggered", timeString + "已发送心跳==token=>" + AppApplication.getMacAdress());
+                    Utils.TextToFile(file, timeString + "已发送心跳==token=>" + AppApplication.getMacAdress());
                     ctx.channel().writeAndFlush(CommandDataInfo.CommandDataInfoMessage.newBuilder().
                             setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.HeartbeatType).
                             setHeartbeatCommand(CommandDataInfo.HeartbeatCommand.newBuilder().setToken(AppApplication.getMacAdress())));
                 } else {
+                    Utils.TextToFile(file, timeString + "未发送心跳==token=>" + AppApplication.getMacAdress());
                     Log.e(TAG, "不发送心跳");
                 }
             }
@@ -76,8 +88,13 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        Log.e(TAG, "channelActive");
 //        NettyTcpClient.getInstance().setConnectStatus(true);
+        String timeString = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                .format(Calendar.getInstance().getTime());
+        Log.e("channelActive", timeString + "已发送心跳==token=>" + AppApplication.getMacAdress());
+        ctx.channel().writeAndFlush(CommandDataInfo.CommandDataInfoMessage.newBuilder().
+                setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.HeartbeatType).
+                setHeartbeatCommand(CommandDataInfo.HeartbeatCommand.newBuilder().setToken(AppApplication.getMacAdress())));
         listener.onClientStatusConnectChanged(ConnectState.STATUS_CONNECT_SUCCESS, index);
     }
 

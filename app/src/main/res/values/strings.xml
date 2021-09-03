@@ -25,7 +25,7 @@
     <string name="upgrading_and_install_failed">升级安装失败！</string>
     <string name="unkown_error">未知错误-apk!</string>
     <string name="system_upgrading">系统升级中...</string>
-    <string name="video_play_error">视频播放失败，尝试重新下载视频播放...</string>
+    <string name="video_play_error">视频播放失败，即将播放下一个视频...</string>
     <string name="speed">速度：%s</string>
     <string name="unkown_error_1">未知错误-下载</string>
     <string name="net_not_available">网络已断开！</string>
