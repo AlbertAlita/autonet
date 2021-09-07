@@ -91,7 +91,9 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
 //        NettyTcpClient.getInstance().setConnectStatus(true);
         String timeString = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
                 .format(Calendar.getInstance().getTime());
-        Log.e("channelActive", timeString + "已发送心跳==token=>" + AppApplication.getMacAdress());
+//        Log.e("channelActive", timeString + "已发送心跳==token=>" + AppApplication.getMacAdress());
+        File file = new File(Utils.initFolderPath(null, Constants.LOG_PATH), "heartbeat" + ".log");
+        Utils.TextToFile(file, timeString + "已发送心跳==token=>" + AppApplication.getMacAdress());
         ctx.channel().writeAndFlush(CommandDataInfo.CommandDataInfoMessage.newBuilder().
                 setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.HeartbeatType).
                 setHeartbeatCommand(CommandDataInfo.HeartbeatCommand.newBuilder().setToken(AppApplication.getMacAdress())));
@@ -105,10 +107,17 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
      */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        Log.e(TAG, "channelInactive");
+        Log.e(TAG, "channelInactive" + ctx.name());
 //        NettyTcpClient.getInstance().setConnectStatus(false);
 //        listener.onServiceStatusConnectChanged(NettyClientListener.STATUS_CONNECT_CLOSED);
         // NettyTcpClient.getInstance().reconnect();
+        WrapNettyClient.getInstance().disConnect(null);
+        WrapNettyClient.getInstance().connect(new Random().nextInt(3000));
+    }
+
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        super.handlerRemoved(ctx);
     }
 
     /**
@@ -119,6 +128,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
      */
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, CommandDataInfo.CommandDataInfoMessage msg) {
+        Log.e(getClass().getSimpleName(), "channelRead0" + msg.toString());
         listener.onMessageResponseClient(msg, index);
     }
 
@@ -131,11 +141,11 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<CommandDataI
         // Close the connection when an exception is raised.
 //        NettyTcpClient.getInstance().setConnectStatus(false);
 
-        Log.e(TAG, "exceptionCaught");
+        Log.e(TAG, "exceptionCaught" + cause.getLocalizedMessage());
         listener.onClientStatusConnectChanged(ConnectState.STATUS_CONNECT_ERROR, index);
-        WrapNettyClient.getInstance().disConnect(null);
-        WrapNettyClient.getInstance().connect(new Random().nextInt(5000));
         cause.printStackTrace();
         ctx.close();
+        WrapNettyClient.getInstance().disConnect(null);
+        WrapNettyClient.getInstance().connect(new Random().nextInt(5000));
     }
 }

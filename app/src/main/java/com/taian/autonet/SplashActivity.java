@@ -48,6 +48,7 @@ public class SplashActivity extends BaseActivity {
     private CommandDataInfo.PackageConfigCommand packageConfigCommand;
     private ProgressDialog mProgressDialog;
     private AlertDialog errorDiaolog;
+    private AlertDialog illegalDeviceWarning;
 
     public interface Const {
         int FOR_NEW_IP = 0x01;
@@ -105,6 +106,7 @@ public class SplashActivity extends BaseActivity {
                             break;
                         case Const.DELAYED_REBOOT:
                             if (!SplashActivity.this.isFinishing()) {
+                                WrapNettyClient.getInstance().disConnect(SplashActivity.this);
                                 Intent intent = new Intent(Constants.RE_BOOT);
                                 sendBroadcast(intent);
                             }
@@ -157,13 +159,16 @@ public class SplashActivity extends BaseActivity {
                                 }
                             } else {
                                 //断开链接
-                                WrapNettyClient.getInstance().disConnect(SplashActivity.this);
+//                                WrapNettyClient.getInstance().disConnect(SplashActivity.this);
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
-                                        new AlertDialog.Builder(SplashActivity.this).
-                                                setMessage(R.string.illegal_device).
-                                                show();
+                                        if (illegalDeviceWarning == null)
+                                            illegalDeviceWarning = new AlertDialog.Builder(SplashActivity.this)
+                                                    .setMessage(R.string.illegal_device)
+                                                    .create();
+                                        if (!illegalDeviceWarning.isShowing())
+                                            illegalDeviceWarning.show();
                                     }
                                 });
                             }

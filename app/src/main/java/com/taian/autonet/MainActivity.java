@@ -316,6 +316,7 @@ public class MainActivity extends BaseActivity {
             mVideoView.release();
             mVideoView = null;
         }
+        WrapNettyClient.getInstance().disConnect(this);
         super.onBackPressed();
     }
 }

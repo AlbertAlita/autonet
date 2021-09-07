@@ -244,9 +244,9 @@ public class NettyTcpClient {
     public void disconnect(Context context) {
         if (Config.LOG_TOGGLE)
             Log.e(TAG, "disconnect");
-        if (group == null) return;
         isNeedReconnect = false;
         isConnect = false;
+        if (group == null) return;
         group.shutdownGracefully();
     }
 
@@ -281,20 +281,6 @@ public class NettyTcpClient {
         return false;
     }
 
-
-    public boolean sendMsgToServer(byte[] data, final MessageStateListener listener) {
-        boolean flag = channel != null && isConnect;
-        if (flag) {
-            ByteBuf buf = Unpooled.copiedBuffer(data);
-            channel.writeAndFlush(buf).addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                    listener.isSendSuccss(channelFuture.isSuccess());
-                }
-            });
-        }
-        return flag;
-    }
 
     public void resetReconnectNum() {
         reconnectNum = MAX_CONNECT_TIMES;

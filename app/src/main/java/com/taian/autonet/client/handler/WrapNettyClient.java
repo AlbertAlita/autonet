@@ -68,8 +68,20 @@ public class WrapNettyClient {
     }
 
     public void connect(long reconnectIntervalTime) {
-        if (mNettyTcpClient != null && !mNettyTcpClient.getConnectStatus())
-            mNettyTcpClient.connect(reconnectIntervalTime);
+        if (mNettyTcpClient != null) {
+            if (!mNettyTcpClient.getConnectStatus())
+                mNettyTcpClient.connect(reconnectIntervalTime);
+            else {
+                CommandDataInfo.TokenCommand tokenCommand = CommandDataInfo.TokenCommand.newBuilder()
+                        .setToken(AppApplication.getMacAdress())
+                        .build();
+                CommandDataInfo.CommandDataInfoMessage token = CommandDataInfo.CommandDataInfoMessage.newBuilder()
+                        .setDataType(CommandDataInfo.CommandDataInfoMessage.CommandType.TokenType)
+                        .setTokenCommand(tokenCommand)
+                        .build();
+                sendMsgToServer(token);
+            }
+        }
     }
 
     public boolean isConnecting() {
